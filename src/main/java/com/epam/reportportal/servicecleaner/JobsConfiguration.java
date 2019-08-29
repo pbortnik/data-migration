@@ -9,11 +9,13 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.data.MongoItemReader;
+import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import javax.sql.DataSource;
 import java.util.HashMap;
@@ -37,6 +39,9 @@ public class JobsConfiguration {
 	@Autowired
 	private DataSource dataSource;
 
+	@Autowired
+	private NamedParameterJdbcTemplate jdbcTemplate;
+
 	@Bean
 	public MongoItemReader<DBObject> userMongoItemReader() {
 		MongoItemReader<DBObject> mongoItemReader = new MongoItemReader<>();
@@ -57,7 +62,12 @@ public class JobsConfiguration {
 
 	@Bean
 	public ItemWriter<DBObject> writer() {
-		return it -> System.out.println(it.size());
+		JdbcBatchItemWriter<DBObject> writer = new JdbcBatchItemWriter<>();
+		writer.setDataSource(dataSource);
+		writer.setJdbcTemplate(jdbcTemplate);
+		writer.setSql(UserPreparedStatementSetter.QUERY_INSERT_USER);
+		writer.setItemPreparedStatementSetter(new UserPreparedStatementSetter());
+		return writer;
 	}
 
 	@Bean
