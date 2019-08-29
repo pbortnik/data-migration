@@ -1,62 +1,76 @@
 package com.epam.reportportal.servicecleaner;
 
-import com.epam.ta.reportportal.config.MongodbConfiguration;
-import com.epam.ta.reportportal.database.entity.Log;
+import com.mongodb.DBObject;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
+import javax.sql.DataSource;
 import java.util.HashMap;
 
 /**
  * @author Pavel Bortnik
  */
 @Configuration
-@EnableConfigurationProperties(MongodbConfiguration.MongoProperties.class)
-@Import(MongodbConfiguration.class)
+@EnableBatchProcessing
 public class JobsConfiguration {
 
 	@Autowired
-	private JobBuilderFactory jobs;
+	private JobBuilderFactory jobBuilderFactory;
 
 	@Autowired
-	private StepBuilderFactory steps;
+	private StepBuilderFactory stepBuilderFactory;
 
 	@Autowired
 	private MongoTemplate mongoTemplate;
 
+	@Autowired
+	private DataSource dataSource;
+
 	@Bean
-	public MongoItemReader<Log> logMongoItemReader() {
-		MongoItemReader<Log> mongoItemReader = new MongoItemReader<>();
-		mongoItemReader.setTargetType(Log.class);
+	public MongoItemReader<DBObject> userMongoItemReader() {
+		MongoItemReader<DBObject> mongoItemReader = new MongoItemReader<>();
 		mongoItemReader.setTemplate(mongoTemplate);
+		mongoItemReader.setTargetType(DBObject.class);
+		mongoItemReader.setCollection("user");
 		mongoItemReader.setSort(new HashMap<String, Sort.Direction>() {{
-			put("_id", Sort.Direction.DESC);
+			put("_id", Sort.Direction.ASC);
 		}});
 		mongoItemReader.setQuery("{}");
 		return mongoItemReader;
 	}
 
 	@Bean
+	public ItemProcessor<DBObject, DBObject> userItemProcessor() {
+		return item -> item;
+	}
+
+	@Bean
+	public ItemWriter<DBObject> writer() {
+		return it -> System.out.println(it.size());
+	}
+
+	@Bean
 	public Step step() {
-		return steps.get("step").<Log, Log>chunk(5).reader(logMongoItemReader())
-				.processor(log -> log)
-				.writer(items -> System.err.println(items.size()))
+		return stepBuilderFactory.get("step").<DBObject, DBObject>chunk(10).reader(userMongoItemReader())
+				.processor(userItemProcessor())
+				.writer(writer())
 				.build();
 	}
 
 	@Bean
 	public Job job() {
-		return jobs.get("job").start(step()).build();
+		return jobBuilderFactory.get("job").flow(step()).end().build();
 	}
 
 }
