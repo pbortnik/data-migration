@@ -1,10 +1,7 @@
-package com.epam.reportportal.servicecleaner;
+package com.epam.reportportal.migration.steps.users;
 
 import com.mongodb.DBObject;
-import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
@@ -21,14 +18,10 @@ import javax.sql.DataSource;
 import java.util.HashMap;
 
 /**
- * @author Pavel Bortnik
+ * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
 @Configuration
-@EnableBatchProcessing
-public class JobsConfiguration {
-
-	@Autowired
-	private JobBuilderFactory jobBuilderFactory;
+public class UserStepConfig {
 
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
@@ -61,7 +54,7 @@ public class JobsConfiguration {
 	}
 
 	@Bean
-	public ItemWriter<DBObject> writer() {
+	public ItemWriter<DBObject> userItemWriter() {
 		JdbcBatchItemWriter<DBObject> writer = new JdbcBatchItemWriter<>();
 		writer.setDataSource(dataSource);
 		writer.setJdbcTemplate(jdbcTemplate);
@@ -71,16 +64,12 @@ public class JobsConfiguration {
 	}
 
 	@Bean
-	public Step step() {
-		return stepBuilderFactory.get("step").<DBObject, DBObject>chunk(10).reader(userMongoItemReader())
+	public Step migrateUsersStep() {
+		return stepBuilderFactory.get("user").<DBObject, DBObject>chunk(10).reader(userMongoItemReader())
 				.processor(userItemProcessor())
-				.writer(writer())
+				.writer(userItemWriter())
 				.build();
 	}
 
-	@Bean
-	public Job job() {
-		return jobBuilderFactory.get("job").flow(step()).end().build();
-	}
 
 }

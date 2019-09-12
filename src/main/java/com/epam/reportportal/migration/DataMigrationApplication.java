@@ -1,12 +1,12 @@
-package com.epam.reportportal.servicecleaner;
+package com.epam.reportportal.migration;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class ServiceCleanerApplication {
+public class DataMigrationApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(ServiceCleanerApplication.class, args);
+		SpringApplication.run(DataMigrationApplication.class, args);
 	}
 }

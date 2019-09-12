@@ -1,4 +1,4 @@
-package com.epam.reportportal.servicecleaner;
+package com.epam.reportportal.migration;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;

@@ -1,4 +1,4 @@
-package com.epam.reportportal.servicecleaner;
+package com.epam.reportportal.migration.steps.users;
 
 import com.mongodb.DBObject;
 import org.springframework.batch.item.database.ItemPreparedStatementSetter;
@@ -12,7 +12,7 @@ import java.util.Optional;
  */
 public class UserPreparedStatementSetter implements ItemPreparedStatementSetter<DBObject> {
 
-	public static final String QUERY_INSERT_USER = "INSERT INTO users (login, password, email, role, type, expired, full_name) VALUES (?, ?, ?, ?, ?, ?, ?);";
+	static final String QUERY_INSERT_USER = "INSERT INTO users (login, password, email, role, type, expired, full_name) VALUES (?, ?, ?, ?, ?, ?, ?);";
 
 	@Override
 	public void setValues(DBObject item, PreparedStatement ps) throws SQLException {
