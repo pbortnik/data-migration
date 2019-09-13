@@ -14,6 +14,7 @@ import java.util.Map;
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
 @Component("projectItemWriter")
+@SuppressWarnings("unchecked")
 public class ProjectItemWriter implements ItemWriter<DBObject> {
 
 	@Autowired
@@ -22,8 +23,8 @@ public class ProjectItemWriter implements ItemWriter<DBObject> {
 	@Override
 	public void write(List<? extends DBObject> items) {
 		items.forEach(project -> {
-			Long id = writeProject(project);
-			System.out.println(id);
+			Long projectId = writeProject(project);
+			writeProjectUsers(project, projectId);
 		});
 	}
 
@@ -33,11 +34,22 @@ public class ProjectItemWriter implements ItemWriter<DBObject> {
 		params.put("pt", ((DBObject) project.get("configuration")).get("entryType"));
 		params.put("org", project.get("customer"));
 		params.put("cd", project.get("creationDate"));
+		params.put("md", "{\"metadata\": {\"migrated_from\": \"MongoDb\"}}");
 
 		return jdbcTemplate.queryForObject(
-				"INSERT INTO project (name, project_type, organization, creation_date) VALUES (:nm, :pt, :org, :cd ) RETURNING project.id",
+				"INSERT INTO project (name, project_type, organization, creation_date, metadata) VALUES (:nm, :pt, :org, :cd, :md::JSONB) RETURNING project.id",
 				params,
 				Long.class
+		);
+	}
+
+	private void writeProjectUsers(DBObject project, Long projectId) {
+		Map<String, Object>[] users = ((List<Map<String, Object>>) project.get("users")).stream()
+				.peek(it -> it.put("projectId", projectId))
+				.toArray(Map[]::new);
+		jdbcTemplate.batchUpdate(
+				"INSERT INTO project_user (user_id, project_id, project_role) VALUES (:userId, :projectId, :projectRole::PROJECT_ROLE_ENUM)",
+				users
 		);
 	}
 }
