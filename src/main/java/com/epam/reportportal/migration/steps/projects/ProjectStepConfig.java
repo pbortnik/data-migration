@@ -14,11 +14,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
 @Configuration
+@SuppressWarnings("unchecked")
 public class ProjectStepConfig {
 
 	@Autowired
@@ -56,4 +58,27 @@ public class ProjectStepConfig {
 				.build();
 	}
 
+	@Bean
+	// Issue group have fixed ids in PostgreSQL
+	public Map<String, Long> issueGroups() {
+		Map<String, Long> groups = new HashMap<>();
+		groups.put("TO_INVESTIGATE", 1L);
+		groups.put("AUTOMATION_BUG", 2L);
+		groups.put("PRODUCT_BUG", 3L);
+		groups.put("NO_DEFECT", 4L);
+		groups.put("SYSTEM_ISSUE", 5L);
+		return groups;
+	}
+
+	@Bean
+	// Default issue types have fixed ids in PostgreSQL
+	public Map<String, Long> defaultIssueTypes() {
+		Map<String, Long> issueTypes = new HashMap<>();
+		issueTypes.put("ti001", 1L);
+		issueTypes.put("ab001", 2L);
+		issueTypes.put("pb001", 3L);
+		issueTypes.put("nd001", 4L);
+		issueTypes.put("si001", 5L);
+		return issueTypes;
+	}
 }
