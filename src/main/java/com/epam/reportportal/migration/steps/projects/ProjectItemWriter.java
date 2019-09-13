@@ -6,9 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.epam.reportportal.migration.steps.utils.ConverterUtils.toUtc;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
@@ -33,7 +36,7 @@ public class ProjectItemWriter implements ItemWriter<DBObject> {
 		params.put("nm", project.get("_id"));
 		params.put("pt", ((DBObject) project.get("configuration")).get("entryType"));
 		params.put("org", project.get("customer"));
-		params.put("cd", project.get("creationDate"));
+		params.put("cd", toUtc((Date) project.get("creationDate")));
 		params.put("md", "{\"metadata\": {\"migrated_from\": \"MongoDb\"}}");
 
 		return jdbcTemplate.queryForObject(
