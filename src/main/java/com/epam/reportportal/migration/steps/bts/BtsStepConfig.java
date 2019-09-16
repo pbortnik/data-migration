@@ -8,14 +8,19 @@ import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+
+import java.util.Collections;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
 @Configuration
+@SuppressWarnings("unchecked")
 public class BtsStepConfig {
 
 	@Autowired
@@ -24,6 +29,13 @@ public class BtsStepConfig {
 	@Autowired
 	private MongoTemplate mongoTemplate;
 
+	@Autowired
+	private NamedParameterJdbcTemplate jdbcTemplate;
+
+	@Autowired
+	@Qualifier(value = "btsItemWriter")
+	private ItemWriter btsItemWriter;
+
 	@Bean
 	public MongoItemReader<DBObject> btsMongoReader() {
 		return MigrationUtils.getMongoItemReader(mongoTemplate, "bts");
@@ -31,19 +43,22 @@ public class BtsStepConfig {
 
 	@Bean
 	public ItemProcessor<DBObject, DBObject> btsItemProcessor() {
-		return item -> item;
-	}
-
-	@Bean
-	public ItemWriter<DBObject> btsItemWriter() {
-		return null;
+		return item -> {
+			Long projectId = jdbcTemplate.queryForObject(
+					"SELECT id FROM project WHERE project.name = :name",
+					Collections.singletonMap("name", item.get("projectRef")),
+					Long.class
+			);
+			item.put("projectId", projectId);
+			return item;
+		};
 	}
 
 	@Bean
 	public Step migrateBtsStep() {
 		return stepBuilderFactory.get("bts").<DBObject, DBObject>chunk(10).reader(btsMongoReader())
 				.processor(btsItemProcessor())
-				.writer(btsItemWriter())
+				.writer(btsItemWriter)
 				.build();
 	}
 

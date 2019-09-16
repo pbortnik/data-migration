@@ -9,3 +9,5 @@ Projects are read from mongo by batch number and inserts one by one into postgre
 and issue types are batched inserted into postgres per project. Attributes are batched inserted per project 
 as well. Analyzer config properties "analyzer.minDocFreq = 1", "analyzer.minTermFreq = 1", "analyzer.minShouldMatch = 95", 
 "analyzer.numberOfLogLines = 4". Email send rules are migrated per project.
+
+Before migrating BTS, the Jira or Rally plugins should be loaded to the RP v5. If they are not found, nothing would migrate.
