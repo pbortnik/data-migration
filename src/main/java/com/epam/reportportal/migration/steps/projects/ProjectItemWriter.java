@@ -7,10 +7,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.migration.steps.utils.ConverterUtils.toUtc;
@@ -30,6 +27,10 @@ public class ProjectItemWriter implements ItemWriter<DBObject> {
 
 	private static final String INSERT_PROJECT_ISSUE_TYPES = "INSERT INTO issue_type_project (project_id, issue_type_id) VALUES (:pr, :it)";
 
+	private static final String INSERT_DEFAULT_ANALYZER_CONFIG = "INSERT INTO project_attribute(attribute_id, value, project_id) VALUES (5, 1, :pr), (6, 1, :pr), (7, 95, :pr), (8, 4, :pr), (9, FALSE, :pr), (2, '3 months', :pr), (14, FALSE, :pr)";
+
+	private static final String INSERT_ATTRIBUTES = "INSERT INTO project_attribute(attribute_id, value, project_id) VALUES (:attr, :val, :pr)";
+
 	@Autowired
 	private NamedParameterJdbcTemplate jdbcTemplate;
 
@@ -41,12 +42,17 @@ public class ProjectItemWriter implements ItemWriter<DBObject> {
 	@Qualifier("defaultIssueTypes")
 	private Map<String, Long> defaultIssueTypes;
 
+	@Autowired
+	@Qualifier("defaultAttributes")
+	private Map<String, Long> defaultAttributes;
+
 	@Override
 	public void write(List<? extends DBObject> items) {
 		items.forEach(project -> {
 			Long projectId = writeProject(project);
 			writeProjectUsers(project, projectId);
 			writeProjectIssueTypes(project, projectId);
+			writeProjectConfiguration(project, projectId);
 		});
 	}
 
@@ -57,8 +63,9 @@ public class ProjectItemWriter implements ItemWriter<DBObject> {
 		params.put("org", project.get("customer"));
 		params.put("cd", toUtc((Date) project.get("creationDate")));
 		params.put("md", "{\"metadata\": {\"migrated_from\": \"MongoDb\"}}");
-
-		return jdbcTemplate.queryForObject(INSERT_PROJECT, params, Long.class);
+		Long projectId = jdbcTemplate.queryForObject(INSERT_PROJECT, params, Long.class);
+		jdbcTemplate.update(INSERT_DEFAULT_ANALYZER_CONFIG, Collections.singletonMap("pr", projectId));
+		return projectId;
 	}
 
 	private void writeProjectUsers(DBObject project, Long projectId) {
@@ -68,7 +75,40 @@ public class ProjectItemWriter implements ItemWriter<DBObject> {
 		jdbcTemplate.batchUpdate(INSERT_PROJECT_USER, users);
 	}
 
-	private List<Map> writeIssueTypes(Long projectId, DBObject subTypes, String issueGroup) {
+	private void writeProjectIssueTypes(DBObject project, Long projectId) {
+		DBObject subTypes = (DBObject) ((DBObject) project.get("configuration")).get("subTypes");
+		Map[] projectIssueTypesParams = issueGroups.keySet()
+				.stream()
+				.flatMap(issueGroup -> collectIssueTypes(projectId, subTypes, issueGroup).stream())
+				.toArray(Map[]::new);
+		jdbcTemplate.batchUpdate(INSERT_PROJECT_ISSUE_TYPES, projectIssueTypesParams);
+	}
+
+	private void writeProjectConfiguration(DBObject project, Long projectId) {
+		DBObject configuration = (DBObject) project.get("configuration");
+		configuration.putAll((Map) configuration.get("analyzerConfig"));
+		configuration.putAll((Map) configuration.get("emailConfig"));
+
+		Map[] params = defaultAttributes.keySet().stream().map(attribute -> {
+
+			Map<String, Object> map = new HashMap<>();
+			map.put("attr", defaultAttributes.get(attribute));
+
+			Object value = configuration.get(attribute);
+			if (value != null) {
+				map.put("val", value);
+			} else {
+				map.put("val", ProjectAttributeEnum.findByAttributeName(attribute).get().getDefaultValue());
+			}
+
+			map.put("pr", projectId);
+			return map;
+		}).toArray(Map[]::new);
+
+		jdbcTemplate.batchUpdate(INSERT_ATTRIBUTES, params);
+	}
+
+	private List<Map> collectIssueTypes(Long projectId, DBObject subTypes, String issueGroup) {
 		return ((List<Map>) subTypes.get(issueGroup)).stream().map(issueType -> {
 
 			Map<String, Long> map = new HashMap<>();
@@ -85,14 +125,5 @@ public class ProjectItemWriter implements ItemWriter<DBObject> {
 			map.put("it", issueTypeId);
 			return map;
 		}).collect(Collectors.toList());
-	}
-
-	private void writeProjectIssueTypes(DBObject project, Long projectId) {
-		DBObject subTypes = (DBObject) ((DBObject) project.get("configuration")).get("subTypes");
-		Map[] projectIssueTypesParams = issueGroups.keySet()
-				.stream()
-				.flatMap(issueGroup -> writeIssueTypes(projectId, subTypes, issueGroup).stream())
-				.toArray(Map[]::new);
-		jdbcTemplate.batchUpdate(INSERT_PROJECT_ISSUE_TYPES, projectIssueTypesParams);
 	}
 }

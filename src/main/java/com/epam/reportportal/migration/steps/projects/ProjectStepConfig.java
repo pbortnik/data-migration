@@ -61,7 +61,7 @@ public class ProjectStepConfig {
 	@Bean
 	// Issue group have fixed ids in PostgreSQL
 	public Map<String, Long> issueGroups() {
-		Map<String, Long> groups = new HashMap<>();
+		Map<String, Long> groups = new HashMap<>(5);
 		groups.put("TO_INVESTIGATE", 1L);
 		groups.put("AUTOMATION_BUG", 2L);
 		groups.put("PRODUCT_BUG", 3L);
@@ -73,12 +73,29 @@ public class ProjectStepConfig {
 	@Bean
 	// Default issue types have fixed ids in PostgreSQL
 	public Map<String, Long> defaultIssueTypes() {
-		Map<String, Long> issueTypes = new HashMap<>();
+		Map<String, Long> issueTypes = new HashMap<>(5);
 		issueTypes.put("ti001", 1L);
 		issueTypes.put("ab001", 2L);
 		issueTypes.put("pb001", 3L);
 		issueTypes.put("nd001", 4L);
 		issueTypes.put("si001", 5L);
 		return issueTypes;
+	}
+
+	@Bean
+	// Default attributes have fixed ids in PostgreSQL
+	public Map<String, Long> defaultAttributes() {
+		Map<String, Long> attributes = new HashMap<>(14);
+
+		attributes.put("interruptJobTime", 1L);
+		attributes.put("keepLogs", 3L);
+		attributes.put("keepScreenshots", 4L);
+
+		attributes.put("isAutoAnalyzerEnabled", 10L);
+		attributes.put("analyzerMode", 11L);
+
+		attributes.put("emailEnabled", 12L);
+		attributes.put("from", 13L);
+		return attributes;
 	}
 }
