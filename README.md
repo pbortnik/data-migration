@@ -8,4 +8,4 @@ assigned at the project, duplicate users, project without assigned users. Migrat
 Projects are read from mongo by batch number and inserts one by one into postgres. Project users
 and issue types are batched inserted into postgres per project. Attributes are batched inserted per project 
 as well. Analyzer config properties "analyzer.minDocFreq = 1", "analyzer.minTermFreq = 1", "analyzer.minShouldMatch = 95", 
-"analyzer.numberOfLogLines = 4".
+"analyzer.numberOfLogLines = 4". Email send rules are migrated per project.
