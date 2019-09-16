@@ -11,7 +11,7 @@ import org.springframework.util.CollectionUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.epam.reportportal.migration.steps.utils.ConverterUtils.toUtc;
+import static com.epam.reportportal.migration.steps.utils.MigrationUtils.toUtc;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>

@@ -1,5 +1,6 @@
 package com.epam.reportportal.migration.steps.projects;
 
+import com.epam.reportportal.migration.steps.utils.MigrationUtils;
 import com.mongodb.DBObject;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
@@ -10,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 import java.util.HashMap;
@@ -39,20 +39,12 @@ public class ProjectStepConfig {
 
 	@Bean
 	public MongoItemReader<DBObject> projectMongoItemReader() {
-		MongoItemReader<DBObject> mongoItemReader = new MongoItemReader<>();
-		mongoItemReader.setTemplate(mongoTemplate);
-		mongoItemReader.setTargetType(DBObject.class);
-		mongoItemReader.setCollection("project");
-		mongoItemReader.setSort(new HashMap<String, Sort.Direction>() {{
-			put("_id", Sort.Direction.ASC);
-		}});
-		mongoItemReader.setQuery("{}");
-		return mongoItemReader;
+		return MigrationUtils.getMongoItemReader(mongoTemplate, "project");
 	}
 
 	@Bean
 	public Step migrateProjectsStep() {
-		return stepBuilderFactory.get("project").<DBObject, DBObject>chunk(10).reader(projectMongoItemReader())
+		return stepBuilderFactory.get("project").<DBObject, DBObject>chunk(50).reader(projectMongoItemReader())
 				.processor(projectItemProcessor)
 				.writer(projectItemWriter)
 				.build();

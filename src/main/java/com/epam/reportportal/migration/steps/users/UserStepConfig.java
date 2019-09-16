@@ -1,5 +1,6 @@
 package com.epam.reportportal.migration.steps.users;
 
+import com.epam.reportportal.migration.steps.utils.MigrationUtils;
 import com.mongodb.DBObject;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
@@ -10,12 +11,10 @@ import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import javax.sql.DataSource;
-import java.util.HashMap;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
@@ -37,15 +36,7 @@ public class UserStepConfig {
 
 	@Bean
 	public MongoItemReader<DBObject> userMongoItemReader() {
-		MongoItemReader<DBObject> mongoItemReader = new MongoItemReader<>();
-		mongoItemReader.setTemplate(mongoTemplate);
-		mongoItemReader.setTargetType(DBObject.class);
-		mongoItemReader.setCollection("user");
-		mongoItemReader.setSort(new HashMap<String, Sort.Direction>() {{
-			put("_id", Sort.Direction.ASC);
-		}});
-		mongoItemReader.setQuery("{}");
-		return mongoItemReader;
+		return MigrationUtils.getMongoItemReader(mongoTemplate, "user");
 	}
 
 	@Bean
@@ -65,11 +56,10 @@ public class UserStepConfig {
 
 	@Bean
 	public Step migrateUsersStep() {
-		return stepBuilderFactory.get("user").<DBObject, DBObject>chunk(10).reader(userMongoItemReader())
+		return stepBuilderFactory.get("user").<DBObject, DBObject>chunk(200).reader(userMongoItemReader())
 				.processor(userItemProcessor())
 				.writer(userItemWriter())
 				.build();
 	}
-
 
 }
