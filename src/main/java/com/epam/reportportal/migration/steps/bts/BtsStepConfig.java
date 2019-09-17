@@ -1,13 +1,14 @@
 package com.epam.reportportal.migration.steps.bts;
 
 import com.epam.reportportal.migration.steps.utils.MigrationUtils;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
-import org.springframework.batch.item.*;
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -34,8 +35,7 @@ public class BtsStepConfig {
 	private NamedParameterJdbcTemplate jdbcTemplate;
 
 	@Autowired
-	@Qualifier(value = "btsItemWriter")
-	private ItemWriter btsItemWriter;
+	private BtsItemWriter btsItemWriter;
 
 	@Bean
 	public Map<String, Long> btsIdMapping() {
@@ -63,13 +63,28 @@ public class BtsStepConfig {
 						Collections.singletonMap("name", item.get("projectRef")),
 						Long.class
 				);
-				item.put("projectId", projectId);
-				item.put("integrationId", ((String) item.get("externalSystemType")).toLowerCase());
+
+				item.removeField("_id");
+				item.removeField("_class");
+
+				item.put("authType", item.get("externalSystemAuth"));
+				item.removeField("externalSystemAuth");
+
+				item.put("oauthAccessKey", item.get("accessKey"));
+				item.removeField("accessKey");
+
+				item.put("defectFormFields", item.get("fields"));
+				item.removeField("fields");
+
+				BasicDBObject params = new BasicDBObject("params", item);
+				return new BasicDBObject("params", params).append("projectId", projectId)
+						.append("integrationId", btsIdMapping().get(((String) item.get("externalSystemType")).toLowerCase()))
+						.append("username", item.get("username"));
+
 			} catch (Exception e) {
 				System.out.println("Project with name " + item.get("projectRef") + " not found.");
 				return null;
 			}
-			return item;
 		};
 	}
 

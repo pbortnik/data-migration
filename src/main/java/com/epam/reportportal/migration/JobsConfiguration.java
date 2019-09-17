@@ -33,7 +33,7 @@ public class JobsConfiguration {
 
 	@Bean
 	public Job job() {
-		return jobBuilderFactory.get("job").flow(migrateUserStep).next(migrateProjectsStep).next(migrateBtsStep).end().build();
+		return jobBuilderFactory.get("job").flow(migrateBtsStep)/*.next(migrateProjectsStep).next(migrateBtsStep)*/.end().build();
 	}
 
 }
