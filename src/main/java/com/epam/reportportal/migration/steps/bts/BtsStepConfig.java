@@ -80,7 +80,7 @@ public class BtsStepConfig {
 				return new BasicDBObject("params", params).append("projectId", projectId)
 						.append("integrationId", btsIdMapping().get(((String) item.get("externalSystemType")).toLowerCase()))
 						.append("username", item.get("username"))
-						.append("project", item.get("project"));
+						.append("project", ((String) item.get("project")).toLowerCase());
 
 			} catch (Exception e) {
 				System.out.println("Project with name " + item.get("projectRef") + " not found.");
