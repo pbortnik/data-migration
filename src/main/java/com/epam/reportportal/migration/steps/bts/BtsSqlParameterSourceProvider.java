@@ -31,6 +31,7 @@ public class BtsSqlParameterSourceProvider extends BeanPropertyItemSqlParameterS
 		res.addValue("en", false);
 		res.addValue("params", params);
 		res.addValue("cr", Optional.ofNullable(item.get("username")).orElse("mongodb"));
+		res.addValue("nm", item.get("project"));
 		return res;
 	}
 }

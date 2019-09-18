@@ -21,7 +21,7 @@ public class BtsItemWriter implements ItemWriter<DBObject> {
 	@Autowired
 	private BtsSqlParameterSourceProvider paramProvider;
 
-	public static final String INSERT_BTS = "INSERT INTO integration (project_id, type, enabled, params, creator) VALUES (:pr, :tp, :en, :params::JSONB, :cr)";
+	public static final String INSERT_BTS = "INSERT INTO integration (project_id, type, enabled, params, creator, name) VALUES (:pr, :tp, :en, :params::JSONB, :cr, :nm)";
 
 	@Override
 	public void write(List<? extends DBObject> items) {
