@@ -2,6 +2,7 @@ package com.epam.reportportal.migration.steps.projects;
 
 import com.epam.reportportal.migration.steps.utils.MigrationUtils;
 import com.mongodb.DBObject;
+import org.springframework.batch.core.ChunkListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.item.ItemProcessor;
@@ -37,6 +38,10 @@ public class ProjectStepConfig {
 	@Qualifier("projectItemWriter")
 	private ItemWriter projectItemWriter;
 
+	@Autowired
+	@Qualifier("chunkCountListener")
+	private ChunkListener chunkCountListener;
+
 	@Bean
 	public MongoItemReader<DBObject> projectMongoItemReader() {
 		return MigrationUtils.getMongoItemReader(mongoTemplate, "project");
@@ -47,6 +52,7 @@ public class ProjectStepConfig {
 		return stepBuilderFactory.get("project").<DBObject, DBObject>chunk(50).reader(projectMongoItemReader())
 				.processor(projectItemProcessor)
 				.writer(projectItemWriter)
+				.listener(chunkCountListener)
 				.build();
 	}
 

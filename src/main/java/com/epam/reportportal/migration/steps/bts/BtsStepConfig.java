@@ -5,12 +5,14 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.ChunkListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -41,6 +43,10 @@ public class BtsStepConfig {
 
 	@Autowired
 	private BtsItemWriter btsItemWriter;
+
+	@Autowired
+	@Qualifier("chunkCountListener")
+	private ChunkListener chunkCountListener;
 
 	@Bean
 	public Map<String, Long> btsIdMapping() {
@@ -102,6 +108,7 @@ public class BtsStepConfig {
 		return stepBuilderFactory.get("bts").<DBObject, DBObject>chunk(10).reader(btsMongoReader())
 				.processor(btsItemProcessor())
 				.writer(btsItemWriter)
+				.listener(chunkCountListener)
 				.build();
 	}
 
