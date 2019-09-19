@@ -16,7 +16,7 @@ import static com.epam.reportportal.migration.steps.utils.MigrationUtils.SELECT_
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
-@Component
+@Component("launchItemProcessor")
 public class LaunchItemProcessor implements ItemProcessor<DBObject, DBObject> {
 
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());

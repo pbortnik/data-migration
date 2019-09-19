@@ -36,7 +36,7 @@ public class ProjectItemProcessor implements ItemProcessor<DBObject, DBObject> {
 		List<DBObject> users = (List<DBObject>) project.get("users");
 
 		if (CollectionUtils.isEmpty(users)) {
-			LOGGER.warn(String.format("Project '%s' hasn't users. It is ignored"));
+			LOGGER.warn(String.format("Project '%s' hasn't users. It is ignored", project.get("_id")));
 			return null;
 		}
 

@@ -5,6 +5,7 @@ import com.mongodb.DBObject;
 import org.springframework.batch.core.ChunkListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -30,6 +31,10 @@ public class LaunchStepConfig {
 	private StepBuilderFactory stepBuilderFactory;
 
 	@Autowired
+	@Qualifier("launchItemProcessor")
+	private ItemProcessor<DBObject, DBObject> launchItemProcessor;
+
+	@Autowired
 	@Qualifier("chunkCountListener")
 	private ChunkListener chunkCountListener;
 
@@ -47,8 +52,12 @@ public class LaunchStepConfig {
 
 	@Bean(name = "migrateLaunchStep")
 	public Step migrateLaunchStep() {
-		return stepBuilderFactory.get("launch").<DBObject, DBObject>chunk(50).reader(launchItemReader()).processor(it -> it).writer(it -> {
-		}).listener(chunkCountListener).build();
+		return stepBuilderFactory.get("launch").<DBObject, DBObject>chunk(50).reader(launchItemReader())
+				.processor(launchItemProcessor)
+				.writer(it -> {
+				})
+				.listener(chunkCountListener)
+				.build();
 	}
 
 }
