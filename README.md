@@ -1,11 +1,11 @@
-##Simple example of reading data from mongo database and storing it into Postgres. 
+# Simple example of reading data from mongo database and storing it into Postgres. 
 
-##BEFORE MIGRATION
+## BEFORE MIGRATION
 The Jira or Rally plugins should be loaded to the RP v5. If they are not found, nothing would migrate.
 Specify RP_LAUNCH_KEEPFOR in milliseconds to migrate launches younger than. Specify -1 to store all launches.  
 
 
-##Important information about migration
+## Important information about migration
 While importing projects and project_users relation, migration ignores non-existing users
 assigned at the project, duplicate users, project without assigned users. Migration adds
 "migrated_from" field in project metadata to mark that project was imported from MongoDB.
