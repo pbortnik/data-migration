@@ -94,7 +94,7 @@ public class BtsStepConfig {
 						.append("project", ((String) item.get("project")).toLowerCase());
 
 			} catch (Exception e) {
-				LOGGER.info(String.format("Project with name '%s' not found. Bts with id '%s' is ignored",
+				LOGGER.warn(String.format("Project with name '%s' not found. Bts with id '%s' is ignored",
 						item.get("projectRef"),
 						item.get("_id")
 				));
