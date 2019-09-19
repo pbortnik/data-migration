@@ -1,8 +1,8 @@
 package com.epam.reportportal.migration.steps.launches;
 
 import com.mongodb.DBObject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -19,7 +19,7 @@ import static com.epam.reportportal.migration.steps.utils.MigrationUtils.SELECT_
 @Component
 public class LaunchItemProcessor implements ItemProcessor<DBObject, DBObject> {
 
-	private static final Logger LOGGER = LogManager.getLogger(LaunchItemProcessor.class);
+	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
 	@Autowired
 	private NamedParameterJdbcTemplate jdbcTemplate;

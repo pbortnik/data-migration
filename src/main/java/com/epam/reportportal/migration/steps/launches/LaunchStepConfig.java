@@ -2,10 +2,12 @@ package com.epam.reportportal.migration.steps.launches;
 
 import com.epam.reportportal.migration.steps.utils.MigrationUtils;
 import com.mongodb.DBObject;
+import org.springframework.batch.core.ChunkListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,6 +29,10 @@ public class LaunchStepConfig {
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
 
+	@Autowired
+	@Qualifier("chunkCountListener")
+	private ChunkListener chunkCountListener;
+
 	@Value("${rp.launch.keepFor}")
 	private Long keepFor;
 
@@ -41,10 +47,8 @@ public class LaunchStepConfig {
 
 	@Bean(name = "migrateLaunchStep")
 	public Step migrateLaunchStep() {
-		return stepBuilderFactory.get("launch").<DBObject, DBObject>chunk(50).reader(launchItemReader())
-				.processor(it -> it)
-				.writer(it -> System.out.println(it.size()))
-				.build();
+		return stepBuilderFactory.get("launch").<DBObject, DBObject>chunk(50).reader(launchItemReader()).processor(it -> it).writer(it -> {
+		}).listener(chunkCountListener).build();
 	}
 
 }

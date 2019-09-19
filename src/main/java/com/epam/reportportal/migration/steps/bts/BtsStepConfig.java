@@ -3,8 +3,8 @@ package com.epam.reportportal.migration.steps.bts;
 import com.epam.reportportal.migration.steps.utils.MigrationUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.item.ItemProcessor;
@@ -28,7 +28,7 @@ import static com.epam.reportportal.migration.steps.utils.MigrationUtils.SELECT_
 @Configuration
 public class BtsStepConfig {
 
-	private static final Logger LOGGER = LogManager.getLogger(BtsStepConfig.class);
+	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
