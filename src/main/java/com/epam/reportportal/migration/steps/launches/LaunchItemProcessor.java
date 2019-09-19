@@ -34,7 +34,7 @@ public class LaunchItemProcessor implements ItemProcessor<DBObject, DBObject> {
 		}
 		try {
 			Long projectId = jdbcTemplate.queryForObject(SELECT_PROJECT_ID,
-					Collections.singletonMap("lg", item.get("projectRef")),
+					Collections.singletonMap("name", item.get("projectRef")),
 					Long.class
 			);
 			item.put("projectId", projectId);

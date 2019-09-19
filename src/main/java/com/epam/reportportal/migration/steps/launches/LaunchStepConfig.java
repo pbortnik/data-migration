@@ -6,6 +6,7 @@ import org.springframework.batch.core.ChunkListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -24,6 +25,9 @@ import java.util.Collections;
 @Configuration
 public class LaunchStepConfig {
 
+	@Value("${rp.launch.keepFor}")
+	private Long keepFor;
+
 	@Autowired
 	private MongoTemplate mongoTemplate;
 
@@ -35,11 +39,13 @@ public class LaunchStepConfig {
 	private ItemProcessor<DBObject, DBObject> launchItemProcessor;
 
 	@Autowired
+	@Qualifier("launchItemWriter")
+	private ItemWriter<DBObject> launchItemWriter;
+
+	@Autowired
 	@Qualifier("chunkCountListener")
 	private ChunkListener chunkCountListener;
 
-	@Value("${rp.launch.keepFor}")
-	private Long keepFor;
 
 	@Bean
 	public MongoItemReader<DBObject> launchItemReader() {
@@ -54,8 +60,7 @@ public class LaunchStepConfig {
 	public Step migrateLaunchStep() {
 		return stepBuilderFactory.get("launch").<DBObject, DBObject>chunk(50).reader(launchItemReader())
 				.processor(launchItemProcessor)
-				.writer(it -> {
-				})
+				.writer(launchItemWriter)
 				.listener(chunkCountListener)
 				.build();
 	}
