@@ -31,9 +31,15 @@ public class JobsConfiguration {
 	@Qualifier("migrateBtsStep")
 	private Step migrateBtsStep;
 
+	@Autowired
+	@Qualifier("migrateLaunchStep")
+	private Step migrateLaunchStep;
+
 	@Bean
 	public Job job() {
-		return jobBuilderFactory.get("job").flow(migrateUserStep).next(migrateProjectsStep).next(migrateBtsStep).end().build();
+		return jobBuilderFactory.get("job")
+				.flow(migrateLaunchStep)./*flow(migrateUserStep).next(migrateProjectsStep).next(migrateBtsStep).*/
+				end().build();
 	}
 
 }

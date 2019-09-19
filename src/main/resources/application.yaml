@@ -5,7 +5,6 @@ spring:
       port: 27017
       database: reportportal
 
-
 rp:
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
@@ -22,3 +21,14 @@ rp:
     port: 5432
     user: rpuser
     pass: rppass
+
+  ##keep launches for latest 6 month
+  launch:
+    keepFor: 15552000000
+
+logging:
+  level:
+    root: info
+  pattern:
+    console: %d{dd-MM-yyyy HH:mm:ss.SSS} %magenta([%thread]) %highlight(%-5level) %logger.%M - %msg%n
+

@@ -1,6 +1,8 @@
 package com.epam.reportportal.migration.steps.projects;
 
 import com.mongodb.DBObject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -11,6 +13,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.epam.reportportal.migration.steps.utils.MigrationUtils.SELECT_USER_ID;
+
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
@@ -18,10 +22,10 @@ import java.util.stream.Collectors;
 @SuppressWarnings("unchecked")
 public class ProjectItemProcessor implements ItemProcessor<DBObject, DBObject> {
 
+	private static final Logger LOGGER = LogManager.getLogger(ProjectItemProcessor.class);
+
 	@Autowired
 	private NamedParameterJdbcTemplate jdbcTemplate;
-
-	private static final String SELECT_USER_ID = "SELECT id FROM users WHERE users.login = :lg";
 
 	@Override
 	public DBObject process(DBObject project) {
@@ -42,11 +46,9 @@ public class ProjectItemProcessor implements ItemProcessor<DBObject, DBObject> {
 								Collections.singletonMap("lg", (String) user.get("login")),
 								Long.class
 						);
-						if (userID != null) {
-							user.put("userId", userID);
-						}
+						user.put("userId", userID);
 					} catch (Exception e) {
-						System.out.println("no user with user name " + user.get("login"));
+						LOGGER.info(String.format("User with name '%s' not found", user.get("login")));
 					}
 				})
 				.filter(it -> it.get("userId") != null)

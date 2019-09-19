@@ -16,6 +16,10 @@ import java.util.HashMap;
  */
 public class MigrationUtils {
 
+	public static final String SELECT_USER_ID = "SELECT id FROM users WHERE users.login = :lg";
+
+	public static final String SELECT_PROJECT_ID = "SELECT id FROM project WHERE project.name = :name";
+
 	public static Timestamp toUtc(Date date) {
 		return Timestamp.valueOf(LocalDateTime.ofInstant(date.toInstant(), ZoneOffset.UTC));
 	}

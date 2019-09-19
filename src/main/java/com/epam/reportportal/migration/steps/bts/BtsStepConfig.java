@@ -3,6 +3,8 @@ package com.epam.reportportal.migration.steps.bts;
 import com.epam.reportportal.migration.steps.utils.MigrationUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.item.ItemProcessor;
@@ -18,12 +20,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.epam.reportportal.migration.steps.utils.MigrationUtils.SELECT_PROJECT_ID;
+
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
 @Configuration
-@SuppressWarnings("unchecked")
 public class BtsStepConfig {
+
+	private static final Logger LOGGER = LogManager.getLogger(BtsStepConfig.class);
 
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
@@ -59,7 +64,7 @@ public class BtsStepConfig {
 	public ItemProcessor<DBObject, DBObject> btsItemProcessor() {
 		return item -> {
 			try {
-				Long projectId = jdbcTemplate.queryForObject("SELECT id FROM project WHERE project.name = :name",
+				Long projectId = jdbcTemplate.queryForObject(SELECT_PROJECT_ID,
 						Collections.singletonMap("name", item.get("projectRef")),
 						Long.class
 				);
@@ -83,7 +88,10 @@ public class BtsStepConfig {
 						.append("project", ((String) item.get("project")).toLowerCase());
 
 			} catch (Exception e) {
-				System.out.println("Project with name " + item.get("projectRef") + " not found.");
+				LOGGER.info(String.format("Project with name '%s' not found. Bts with id '%s' is ignored",
+						item.get("projectRef"),
+						item.get("_id")
+				));
 				return null;
 			}
 		};
@@ -105,7 +113,7 @@ public class BtsStepConfig {
 			);
 			mapping.put(integrationName, id);
 		} catch (Exception e) {
-			System.out.println(integrationName + " not found");
+			LOGGER.info(String.format("Integration type with name '%s' not found.", integrationName));
 		}
 	}
 
