@@ -38,7 +38,10 @@ public class JobsConfiguration {
 	@Bean
 	public Job job() {
 		return jobBuilderFactory.get("job")
-				.flow(migrateLaunchStep)/*.next(migrateProjectsStep).next(migrateBtsStep).next(migrateLaunchStep)*/
+				.flow(migrateUserStep)
+				.next(migrateProjectsStep)
+				.next(migrateBtsStep)
+				.next(migrateLaunchStep)
 				.end()
 				.build();
 	}

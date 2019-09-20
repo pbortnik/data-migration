@@ -1,6 +1,7 @@
 package com.epam.reportportal.migration.steps.launches;
 
 import com.mongodb.DBObject;
+import org.bson.types.ObjectId;
 import org.springframework.batch.item.database.ItemSqlParameterSourceProvider;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 
@@ -13,9 +14,9 @@ import static com.epam.reportportal.migration.steps.utils.MigrationUtils.toUtc;
  */
 class LaunchProviderUtils {
 
-
 	static final ItemSqlParameterSourceProvider<DBObject> LAUNCH_SOURCE_PROVIDER = item -> {
 		MapSqlParameterSource parameterSource = new MapSqlParameterSource();
+		parameterSource.addValue("uuid", ((ObjectId) item.get("_id")).toString());
 		parameterSource.addValue("pr", item.get("projectId"));
 		parameterSource.addValue("usr", item.get("userId"));
 		parameterSource.addValue("nm", item.get("name"));
