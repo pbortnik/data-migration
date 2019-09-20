@@ -18,6 +18,8 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import java.sql.Date;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
@@ -46,6 +48,26 @@ public class LaunchStepConfig {
 	@Qualifier("chunkCountListener")
 	private ChunkListener chunkCountListener;
 
+	@Bean(name = "statisticsFields")
+	// Default statistics fields have fixed ids in PostgreSQL
+	public Map<String, Long> statisticsFields() {
+		Map<String, Long> statisticsFields = new HashMap<>(14);
+		statisticsFields.put("statistics$executions$total", 1L);
+		statisticsFields.put("statistics$executions$passed", 2L);
+		statisticsFields.put("statistics$executions$skipped", 3L);
+		statisticsFields.put("statistics$executions$failed", 4L);
+		statisticsFields.put("statistics$defects$automation_bug$total", 5L);
+		statisticsFields.put("statistics$defects$automation_bug$ab001", 6L);
+		statisticsFields.put("statistics$defects$product_bug$total", 7L);
+		statisticsFields.put("statistics$defects$product_bug$pb001", 8L);
+		statisticsFields.put("statistics$defects$system_issue$total", 9L);
+		statisticsFields.put("statistics$defects$system_issue$si001", 10L);
+		statisticsFields.put("statistics$defects$to_investigate$total", 11L);
+		statisticsFields.put("statistics$defects$to_investigate$ti001", 12L);
+		statisticsFields.put("statistics$defects$no_defect$total", 13L);
+		statisticsFields.put("statistics$defects$no_defect$nd001", 14L);
+		return statisticsFields;
+	}
 
 	@Bean
 	public MongoItemReader<DBObject> launchItemReader() {
