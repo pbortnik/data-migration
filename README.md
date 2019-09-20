@@ -17,3 +17,9 @@ as well. Analyzer config properties "analyzer.minDocFreq = 1", "analyzer.minTerm
 
 Creator of bts doesn't exist in mongodb, so it is imported as login taken from basic auth or 'mongodb' if
 doesn't exist.
+
+## Recommendations before and after migration
+
+To increase the speed of migration check the [official documentation](https://www.postgresql.org/docs/current/populate.html#POPULATE-COPY-FROM).
+In short, it is a good idea to remove indexes and foreign keys and disable triggers before migration.
+Return everything back after migration. Run VACUUM ANALYZE to update db planner.   
