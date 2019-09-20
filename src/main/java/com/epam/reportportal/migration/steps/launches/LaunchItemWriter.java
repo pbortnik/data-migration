@@ -13,6 +13,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
@@ -27,6 +28,9 @@ public class LaunchItemWriter implements ItemWriter<DBObject> {
 
 	private static final String INSERT_LAUNCH_ATTRIBUTES = "INSERT INTO item_attribute (value, launch_id) VALUES (:val, :id)";
 
+	private static final String INSERT_STATISTICS_FIELD = "INSERT INTO statistics_field (name) VALUES (:sf) RETURNING sf_id";
+
+	private static final String INSERT_LAUNCH_STATISTICS = "INSERT INTO statistics (s_counter, launch_id, statistics_field_id) VALUES (:ct, :lid, :sfi)";
 
 	private static final String TI_CUSTOM = "statistics$defects$to_investigate$%s";
 	private static final String PB_CUSTOM = "statistics$defects$product_bug$%s";
@@ -49,12 +53,26 @@ public class LaunchItemWriter implements ItemWriter<DBObject> {
 					Long.class
 			);
 			writeTags((BasicDBList) it.get("tags"), id);
-			writeStatistics((DBObject) it.get("statistics"));
+			writeStatistics((DBObject) it.get("statistics"), id);
 		});
 	}
 
-	private void writeStatistics(DBObject statistics) {
+	private void writeStatistics(DBObject statistics, Long launchId) {
+		DBObject executions = (DBObject) statistics.get("executionCounter");
 
+		SqlParameterSource[] paramSource = executions.keySet().stream().map(it -> {
+			MapSqlParameterSource params = new MapSqlParameterSource();
+			Long counter = (Long) executions.get(it);
+			if (counter != null) {
+				params.addValue("ct", counter);
+				params.addValue("lid", launchId);
+				params.addValue("sfi", statisticsFields.get(it));
+				return params;
+			}
+			return null;
+		}).filter(Objects::nonNull).toArray(SqlParameterSource[]::new);
+
+		DBObject defects = (DBObject) statistics.get("issueCounter");
 	}
 
 	private void writeTags(BasicDBList tags, Long id) {

@@ -1,10 +1,13 @@
 package com.epam.reportportal.migration.steps.launches;
 
 import com.epam.reportportal.migration.steps.utils.MigrationUtils;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.mongodb.DBObject;
 import org.springframework.batch.core.ChunkListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.data.MongoItemReader;
@@ -20,6 +23,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
@@ -49,13 +53,14 @@ public class LaunchStepConfig {
 	private ChunkListener chunkCountListener;
 
 	@Bean(name = "statisticsFields")
+	@StepScope
 	// Default statistics fields have fixed ids in PostgreSQL
 	public Map<String, Long> statisticsFields() {
 		Map<String, Long> statisticsFields = new HashMap<>(14);
-		statisticsFields.put("statistics$executions$total", 1L);
-		statisticsFields.put("statistics$executions$passed", 2L);
-		statisticsFields.put("statistics$executions$skipped", 3L);
-		statisticsFields.put("statistics$executions$failed", 4L);
+		statisticsFields.put("total", 1L);
+		statisticsFields.put("passed", 2L);
+		statisticsFields.put("skipped", 3L);
+		statisticsFields.put("failed", 4L);
 		statisticsFields.put("statistics$defects$automation_bug$total", 5L);
 		statisticsFields.put("statistics$defects$automation_bug$ab001", 6L);
 		statisticsFields.put("statistics$defects$product_bug$total", 7L);
@@ -70,11 +75,20 @@ public class LaunchStepConfig {
 	}
 
 	@Bean
+	@StepScope
+	public Cache<String, Long> customStatisticsFieldsCache() {
+		return Caffeine.newBuilder().initialCapacity(50).maximumSize(50).expireAfterAccess(10, TimeUnit.MINUTES).build();
+	}
+
+	@Bean
+	@StepScope
 	public MongoItemReader<DBObject> launchItemReader() {
 		MongoItemReader<DBObject> itemReader = MigrationUtils.getMongoItemReader(mongoTemplate, "launch");
-		java.util.Date findFrom = Date.from(Instant.now().minusMillis(keepFor));
-		itemReader.setQuery("{'last_modified': { $gte : ?0 }}");
-		itemReader.setParameterValues(Collections.singletonList(findFrom));
+		if (keepFor != -1 && keepFor >= 0) {
+			java.util.Date findFrom = Date.from(Instant.now().minusMillis(keepFor));
+			itemReader.setQuery("{'last_modified': { $gte : ?0 }}");
+			itemReader.setParameterValues(Collections.singletonList(findFrom));
+		}
 		return itemReader;
 	}
 
