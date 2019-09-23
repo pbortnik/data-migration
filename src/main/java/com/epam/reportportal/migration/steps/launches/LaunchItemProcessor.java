@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -29,7 +30,7 @@ public class LaunchItemProcessor implements ItemProcessor<DBObject, DBObject> {
 		try {
 			Long userID = jdbcTemplate.queryForObject(SELECT_USER_ID, Collections.singletonMap("lg", item.get("userRef")), Long.class);
 			item.put("userId", userID);
-		} catch (Exception e) {
+		} catch (EmptyResultDataAccessException e) {
 			LOGGER.warn(String.format("User with name '%s' not found", item.get("userRef")));
 		}
 		try {
@@ -38,7 +39,7 @@ public class LaunchItemProcessor implements ItemProcessor<DBObject, DBObject> {
 					Long.class
 			);
 			item.put("projectId", projectId);
-		} catch (Exception e) {
+		} catch (EmptyResultDataAccessException e) {
 			LOGGER.warn(String.format(
 					"Project with name '%s' not found. Launch with id '%s' is ignored",
 					item.get("projectRef"),

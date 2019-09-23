@@ -2,8 +2,7 @@ package com.epam.reportportal.migration.steps.launches;
 
 import com.epam.reportportal.migration.steps.utils.MigrationUtils;
 import com.mongodb.DBObject;
-import org.springframework.batch.core.ChunkListener;
-import org.springframework.batch.core.Step;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemProcessor;
@@ -15,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.sql.Date;
 import java.time.Instant;
@@ -31,6 +31,9 @@ public class LaunchStepConfig {
 
 	@Autowired
 	private MongoTemplate mongoTemplate;
+
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
@@ -57,6 +60,23 @@ public class LaunchStepConfig {
 			itemReader.setParameterValues(Collections.singletonList(findFrom));
 		}
 		return itemReader;
+	}
+
+	@Bean
+	@StepScope
+	public StepListener launchStepListener() {
+		return new StepExecutionListener() {
+			@Override
+			public void beforeStep(StepExecution stepExecution) {
+				jdbcTemplate.execute("ALTER TABLE launch DISABLE TRIGGER ALL;");
+			}
+
+			@Override
+			public ExitStatus afterStep(StepExecution stepExecution) {
+				jdbcTemplate.execute("ALTER TABLE launch ENABLE TRIGGER ALL;");
+				return ExitStatus.COMPLETED;
+			}
+		};
 	}
 
 	@Bean(name = "migrateLaunchStep")

@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
@@ -93,7 +94,7 @@ public class BtsStepConfig {
 						.append("username", item.get("username"))
 						.append("project", ((String) item.get("project")).toLowerCase());
 
-			} catch (Exception e) {
+			} catch (EmptyResultDataAccessException e) {
 				LOGGER.warn(String.format("Project with name '%s' not found. Bts with id '%s' is ignored",
 						item.get("projectRef"),
 						item.get("_id")
@@ -119,7 +120,7 @@ public class BtsStepConfig {
 					Long.class
 			);
 			mapping.put(integrationName, id);
-		} catch (Exception e) {
+		} catch (EmptyResultDataAccessException e) {
 			LOGGER.info(String.format("Integration type with name '%s' not found.", integrationName));
 		}
 	}

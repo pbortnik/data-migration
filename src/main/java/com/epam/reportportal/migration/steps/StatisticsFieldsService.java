@@ -4,6 +4,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.util.Collections;
@@ -46,7 +47,7 @@ public class StatisticsFieldsService {
 							Collections.singletonMap("nm", fieldName),
 							Long.class
 					);
-				} catch (Exception e) {
+				} catch (EmptyResultDataAccessException e) {
 					defectFieldId = jdbcTemplate.queryForObject(INSERT_STATISTICS_FIELD,
 							Collections.singletonMap("nm", fieldName),
 							Long.class

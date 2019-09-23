@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -48,7 +49,7 @@ public class ProjectItemProcessor implements ItemProcessor<DBObject, DBObject> {
 								Long.class
 						);
 						user.put("userId", userID);
-					} catch (Exception e) {
+					} catch (EmptyResultDataAccessException e) {
 						LOGGER.warn(String.format("User with name '%s' not found", user.get("login")));
 					}
 				})
