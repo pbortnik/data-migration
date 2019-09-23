@@ -42,11 +42,12 @@ public class JobsConfiguration {
 	@Bean
 	public Job job() {
 		return jobBuilderFactory.get("job")
-				.flow(migrateLaunchNumberStep)
-//				.flow(migrateUserStep)
-//				.next(migrateProjectsStep)
-//				.next(migrateBtsStep)
-//				.next(migrateLaunchStep)
+				//				.flow(migrateLaunchNumberStep)
+				.flow(migrateUserStep)
+				.next(migrateProjectsStep)
+				.next(migrateBtsStep)
+				.next(migrateLaunchStep)
+				.next(migrateLaunchNumberStep)
 				.end()
 				.build();
 	}

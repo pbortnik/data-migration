@@ -2,7 +2,9 @@ package com.epam.reportportal.migration.steps.launches;
 
 import com.epam.reportportal.migration.steps.utils.MigrationUtils;
 import com.mongodb.DBObject;
-import org.springframework.batch.core.*;
+import org.springframework.batch.core.ChunkListener;
+import org.springframework.batch.core.Step;
+import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemProcessor;
@@ -50,6 +52,9 @@ public class LaunchStepConfig {
 	@Qualifier("chunkCountListener")
 	private ChunkListener chunkCountListener;
 
+	@Autowired
+	private StepExecutionListener launchStepListener;
+
 	@Bean
 	@StepScope
 	public MongoItemReader<DBObject> launchItemReader() {
@@ -62,28 +67,12 @@ public class LaunchStepConfig {
 		return itemReader;
 	}
 
-	@Bean
-	@StepScope
-	public StepListener launchStepListener() {
-		return new StepExecutionListener() {
-			@Override
-			public void beforeStep(StepExecution stepExecution) {
-				jdbcTemplate.execute("ALTER TABLE launch DISABLE TRIGGER ALL;");
-			}
-
-			@Override
-			public ExitStatus afterStep(StepExecution stepExecution) {
-				jdbcTemplate.execute("ALTER TABLE launch ENABLE TRIGGER ALL;");
-				return ExitStatus.COMPLETED;
-			}
-		};
-	}
-
 	@Bean(name = "migrateLaunchStep")
 	public Step migrateLaunchStep() {
 		return stepBuilderFactory.get("launch").<DBObject, DBObject>chunk(50).reader(launchItemReader())
 				.processor(launchItemProcessor)
 				.writer(launchItemWriter)
+				.listener(launchStepListener)
 				.listener(chunkCountListener)
 				.build();
 	}
