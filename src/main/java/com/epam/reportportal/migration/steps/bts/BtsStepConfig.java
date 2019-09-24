@@ -92,6 +92,7 @@ public class BtsStepConfig {
 				return new BasicDBObject("params", params).append("projectId", projectId)
 						.append("integrationId", btsIdMapping().get(((String) item.get("externalSystemType")).toLowerCase()))
 						.append("username", item.get("username"))
+						.append("id", item.get("_id").toString())
 						.append("project", ((String) item.get("project")).toLowerCase());
 
 			} catch (EmptyResultDataAccessException e) {

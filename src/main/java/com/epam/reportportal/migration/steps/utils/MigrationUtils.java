@@ -21,6 +21,9 @@ public class MigrationUtils {
 	public static final String SELECT_PROJECT_ID = "SELECT id FROM project WHERE project.name = :name";
 
 	public static Timestamp toUtc(Date date) {
+		if (date == null) {
+			return null;
+		}
 		return Timestamp.valueOf(LocalDateTime.ofInstant(date.toInstant(), ZoneOffset.UTC));
 	}
 

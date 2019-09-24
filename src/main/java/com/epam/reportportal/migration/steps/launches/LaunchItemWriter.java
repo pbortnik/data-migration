@@ -5,6 +5,7 @@ import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
@@ -27,11 +28,14 @@ public class LaunchItemWriter implements ItemWriter<DBObject> {
 	private static final String INSERT_LAUNCH =
 			"INSERT INTO launch (uuid, project_id, user_id, name, description, start_time, end_time, number, last_modified,"
 					+ "mode, status, approximate_duration) VALUES (:uuid, :pr, :usr, :nm, :desc, :start, :end, :num, :last, "
-					+ ":md::LAUNCH_MODE_ENUM, :st::STATUS_ENUM, :approx) RETURNING id";
+					+ ":md::LAUNCH_MODE_ENUM, :st::STATUS_ENUM, :approx) RETURNING id;";
 
 	private static final String INSERT_LAUNCH_ATTRIBUTES = "INSERT INTO item_attribute (value, launch_id) VALUES (:val, :id)";
 
 	private static final String INSERT_LAUNCH_STATISTICS = "INSERT INTO statistics (s_counter, launch_id, statistics_field_id) VALUES (:ct, :lid, :sfi)";
+
+	@Autowired
+	private JdbcTemplate jdbc;
 
 	@Autowired
 	private NamedParameterJdbcTemplate jdbcTemplate;
@@ -42,6 +46,7 @@ public class LaunchItemWriter implements ItemWriter<DBObject> {
 	@Override
 	public void write(List<? extends DBObject> items) {
 		items.forEach(it -> {
+			jdbc.execute("SET session_replication_role = REPLICA;");
 			Long id = jdbcTemplate.queryForObject(INSERT_LAUNCH,
 					LaunchProviderUtils.LAUNCH_SOURCE_PROVIDER.createSqlParameterSource(it),
 					Long.class
