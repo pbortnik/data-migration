@@ -76,6 +76,7 @@ public class BtsStepConfig {
 						Long.class
 				);
 
+				item.put("id", item.get("_id").toString());
 				item.removeField("_id");
 				item.removeField("_class");
 
@@ -92,14 +93,11 @@ public class BtsStepConfig {
 				return new BasicDBObject("params", params).append("projectId", projectId)
 						.append("integrationId", btsIdMapping().get(((String) item.get("externalSystemType")).toLowerCase()))
 						.append("username", item.get("username"))
-						.append("id", item.get("_id").toString())
+
 						.append("project", ((String) item.get("project")).toLowerCase());
 
 			} catch (EmptyResultDataAccessException e) {
-				LOGGER.warn(String.format("Project with name '%s' not found. Bts with id '%s' is ignored",
-						item.get("projectRef"),
-						item.get("_id")
-				));
+				LOGGER.warn(String.format("Project with name '%s' not found. Bts  is ignored", item.get("projectRef")));
 				return null;
 			}
 		};

@@ -14,11 +14,13 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 import java.sql.Date;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
@@ -52,10 +54,13 @@ public class ItemsStepConfig {
 	public MongoItemReader<DBObject> testItemReader() {
 		MongoItemReader<DBObject> itemReader = MigrationUtils.getMongoItemReader(mongoTemplate, "testItem");
 		if (keepFor != -1 && keepFor >= 0) {
-			java.util.Date findFrom = Date.from(Instant.now().minusMillis(keepFor));
+			java.util.Date findFrom = Date.from(Instant.now().minusMillis(keepFor).minusSeconds(604800L));
 			itemReader.setQuery("{'start_time': { $gte : ?0 }}");
 			itemReader.setParameterValues(Collections.singletonList(findFrom));
 		}
+		itemReader.setSort(new HashMap<String, Sort.Direction>() {{
+			put("start_time", Sort.Direction.ASC);
+		}});
 		return itemReader;
 	}
 

@@ -19,8 +19,9 @@ public class BtsSqlParameterSourceProvider implements ItemSqlParameterSourceProv
 	@Override
 	public SqlParameterSource createSqlParameterSource(DBObject item) {
 		String params;
+		DBObject paramsObject = (DBObject) item.get("params");
 		try {
-			params = new ObjectMapper().writeValueAsString(item.get("params"));
+			params = new ObjectMapper().writeValueAsString(paramsObject);
 			params = params.replaceAll("isRequired", "required");
 		} catch (JsonProcessingException e) {
 			throw new RuntimeException();
@@ -31,7 +32,7 @@ public class BtsSqlParameterSourceProvider implements ItemSqlParameterSourceProv
 		res.addValue("en", false);
 		res.addValue("params", params);
 		res.addValue("cr", Optional.ofNullable(item.get("username")).orElse("mongodb"));
-		res.addValue("nm", item.get("project"));
+		res.addValue("nm", item.get("project") + "_" + ((DBObject) paramsObject.get("params")).get("id").toString());
 		return res;
 	}
 }

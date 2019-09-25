@@ -47,11 +47,11 @@ public class JobsConfiguration {
 	public Job job() {
 		return jobBuilderFactory.get("job")
 				.flow(migrateTestItemStep)
-//				.flow(migrateUserStep)
 //				.next(migrateProjectsStep)
 //				.next(migrateBtsStep)
 //				.next(migrateLaunchStep)
 //				.next(migrateLaunchNumberStep)
+//				.next(migrateTestItemStep)
 				.end()
 				.build();
 	}
