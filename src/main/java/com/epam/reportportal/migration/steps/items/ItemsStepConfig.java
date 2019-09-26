@@ -55,7 +55,7 @@ public class ItemsStepConfig {
 	@StepScope
 	public MongoItemReader<DBObject> testItemReader() {
 		MongoItemReader<DBObject> itemReader = MigrationUtils.getMongoItemReader(mongoTemplate, "launch");
-		java.util.Date dateFrom = Date.from(LocalDate.parse(keepFrom).atStartOfDay(ZoneOffset.UTC).toInstant().minus(1, ChronoUnit.WEEKS));
+		java.util.Date dateFrom = Date.from(LocalDate.parse(keepFrom).atStartOfDay(ZoneOffset.UTC).toInstant().minus(5, ChronoUnit.DAYS));
 		itemReader.setQuery("{'start_time': { $gte : ?0 }}");
 		itemReader.setParameterValues(Collections.singletonList(dateFrom));
 		itemReader.setSort(new HashMap<String, Sort.Direction>() {{

@@ -16,7 +16,7 @@ import java.util.Map;
 @Configuration
 public class StatisticsFieldsService {
 
-	private static final String INSERT_STATISTICS_FIELD = "INSERT INTO statistics_field (name) VALUES (:nm) RETURNING sf_id";
+	private static final String INSERT_STATISTICS_FIELD = "INSERT INTO statistics_field (name) VALUES (:nm) ON CONFLICT DO NOTHING;";
 
 	private static final String SELECT_STATISTICS_FIELD = "SELECT sf_id FROM statistics_field WHERE name = :nm";
 
@@ -48,7 +48,8 @@ public class StatisticsFieldsService {
 							Long.class
 					);
 				} catch (EmptyResultDataAccessException e) {
-					defectFieldId = jdbcTemplate.queryForObject(INSERT_STATISTICS_FIELD,
+					jdbcTemplate.queryForObject(INSERT_STATISTICS_FIELD, Collections.singletonMap("nm", fieldName), Long.class);
+					defectFieldId = jdbcTemplate.queryForObject(SELECT_STATISTICS_FIELD,
 							Collections.singletonMap("nm", fieldName),
 							Long.class
 					);

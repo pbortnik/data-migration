@@ -3,6 +3,7 @@ package com.epam.reportportal.migration.steps.launches;
 import com.mongodb.DBObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -18,6 +19,7 @@ import static com.epam.reportportal.migration.steps.utils.MigrationUtils.SELECT_
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
 @Component("launchItemProcessor")
+@StepScope
 public class LaunchItemProcessor implements ItemProcessor<DBObject, DBObject> {
 
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());

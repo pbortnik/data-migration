@@ -3,6 +3,7 @@ package com.epam.reportportal.migration.steps.launches;
 import com.epam.reportportal.migration.steps.CommonItemWriter;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -15,6 +16,7 @@ import java.util.List;
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
 @Component("launchItemWriter")
+@StepScope
 public class LaunchItemWriter implements ItemWriter<DBObject> {
 
 	private static final String INSERT_LAUNCH =

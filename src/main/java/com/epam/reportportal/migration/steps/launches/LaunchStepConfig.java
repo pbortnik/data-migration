@@ -6,6 +6,7 @@ import org.springframework.batch.core.ChunkListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.core.partition.support.Partitioner;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.data.MongoItemReader;
@@ -14,12 +15,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
-import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
@@ -48,24 +49,48 @@ public class LaunchStepConfig {
 	@Qualifier("chunkCountListener")
 	private ChunkListener chunkCountListener;
 
+	@Autowired
+	private Partitioner datePartitioning;
 
 	@Bean
 	@StepScope
-	public MongoItemReader<DBObject> launchItemReader() {
+	public MongoItemReader<DBObject> launchItemReader(@Value("#{stepExecutionContext[minValue]}") Long minTime,
+			@Value("#{stepExecutionContext[maxValue]}") Long maxTime) {
 		MongoItemReader<DBObject> itemReader = MigrationUtils.getMongoItemReader(mongoTemplate, "launch");
-		java.util.Date dateFrom = Date.from(LocalDate.parse(keepFrom).atStartOfDay(ZoneOffset.UTC).toInstant());
-		itemReader.setQuery("{'last_modified': { $gte : ?0 }}");
-		itemReader.setParameterValues(Collections.singletonList(dateFrom));
+		itemReader.setQuery("{ $and : [ { 'start_time': { $gte : ?0 }}, { 'start_time': { $lte :  ?1 }} ]}");
+		List<Object> list = new LinkedList<>();
+		list.add(new Date(minTime));
+		list.add(new Date(maxTime));
+		itemReader.setParameterValues(list);
 		return itemReader;
 	}
 
 	@Bean(name = "migrateLaunchStep")
 	public Step migrateLaunchStep() {
-		return stepBuilderFactory.get("launch").<DBObject, DBObject>chunk(50).reader(launchItemReader())
-				.processor(launchItemProcessor)
-				.writer(launchItemWriter)
+		return stepBuilderFactory.get("launch")
+				.partitioner("slaveLaunchStep", datePartitioning)
+				.gridSize(12)
+				.step(slaveStep())
+				.taskExecutor(new SimpleAsyncTaskExecutor())
 				.listener(chunkCountListener)
 				.build();
 	}
+
+	@Bean
+	public Step slaveStep() {
+		return stepBuilderFactory.get("slaveLaunchStep").<DBObject, DBObject>chunk(50).reader(launchItemReader(null, null))
+				.processor(launchItemProcessor)
+				.writer(launchItemWriter)
+				.build();
+	}
+
+	//	@Bean(name = "migrateLaunchStep")
+	//	public Step migrateLaunchStep() {
+	//		return stepBuilderFactory.get("launch").<DBObject, DBObject>chunk(50).reader(launchItemReader())
+	//				.processor(launchItemProcessor)
+	//				.writer(launchItemWriter)
+	//				.listener(chunkCountListener)
+	//				.build();
+	//	}
 
 }
