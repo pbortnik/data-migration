@@ -17,9 +17,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
-import java.sql.Date;
-import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 
 /**
@@ -46,18 +48,16 @@ public class ItemsStepConfig {
 	@Qualifier("testItemWriter")
 	private ItemWriter testItemWriter;
 
-	@Value("${rp.launch.keepFor}")
-	private Long keepFor;
+	@Value("${rp.launch.keepFrom}")
+	private String keepFrom;
 
 	@Bean
 	@StepScope
 	public MongoItemReader<DBObject> testItemReader() {
-		MongoItemReader<DBObject> itemReader = MigrationUtils.getMongoItemReader(mongoTemplate, "testItem");
-		if (keepFor != -1 && keepFor >= 0) {
-			java.util.Date findFrom = Date.from(Instant.now().minusMillis(keepFor).minusSeconds(604800L));
-			itemReader.setQuery("{'start_time': { $gte : ?0 }}");
-			itemReader.setParameterValues(Collections.singletonList(findFrom));
-		}
+		MongoItemReader<DBObject> itemReader = MigrationUtils.getMongoItemReader(mongoTemplate, "launch");
+		java.util.Date dateFrom = Date.from(LocalDate.parse(keepFrom).atStartOfDay(ZoneOffset.UTC).toInstant().minus(1, ChronoUnit.WEEKS));
+		itemReader.setQuery("{'start_time': { $gte : ?0 }}");
+		itemReader.setParameterValues(Collections.singletonList(dateFrom));
 		itemReader.setSort(new HashMap<String, Sort.Direction>() {{
 			put("start_time", Sort.Direction.ASC);
 		}});

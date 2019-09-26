@@ -22,9 +22,9 @@ rp:
     user: rpuser
     pass: rppass
 
-  ##keep launches for latest 6 month
+  ##keep launches from date in ISO_LOCAL_DATE (yyyy-MM-dd)
   launch:
-    keepFor: 15552000000
+    keepFor: 2019-03-30
 
 logging:
   level:
