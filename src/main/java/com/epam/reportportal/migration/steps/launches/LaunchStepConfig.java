@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 import java.util.Date;
@@ -52,6 +52,9 @@ public class LaunchStepConfig {
 	@Autowired
 	private Partitioner datePartitioning;
 
+	@Autowired
+	private TaskExecutor threadPoolTaskExecutor;
+
 	@Bean
 	@StepScope
 	public MongoItemReader<DBObject> launchItemReader(@Value("#{stepExecutionContext[minValue]}") Long minTime,
@@ -70,27 +73,17 @@ public class LaunchStepConfig {
 		return stepBuilderFactory.get("launch")
 				.partitioner("slaveLaunchStep", datePartitioning)
 				.gridSize(12)
-				.step(slaveStep())
-				.taskExecutor(new SimpleAsyncTaskExecutor())
+				.step(slaveLaunchStep())
+				.taskExecutor(threadPoolTaskExecutor)
 				.listener(chunkCountListener)
 				.build();
 	}
 
 	@Bean
-	public Step slaveStep() {
+	public Step slaveLaunchStep() {
 		return stepBuilderFactory.get("slaveLaunchStep").<DBObject, DBObject>chunk(50).reader(launchItemReader(null, null))
 				.processor(launchItemProcessor)
 				.writer(launchItemWriter)
 				.build();
 	}
-
-	//	@Bean(name = "migrateLaunchStep")
-	//	public Step migrateLaunchStep() {
-	//		return stepBuilderFactory.get("launch").<DBObject, DBObject>chunk(50).reader(launchItemReader())
-	//				.processor(launchItemProcessor)
-	//				.writer(launchItemWriter)
-	//				.listener(chunkCountListener)
-	//				.build();
-	//	}
-
 }

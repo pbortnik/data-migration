@@ -5,6 +5,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +49,15 @@ public class DataMigrationApplication {
 		statisticsFields.put("statistics$defects$no_defect$total", 13L);
 		statisticsFields.put("statistics$defects$no_defect$nd001", 14L);
 		return statisticsFields;
+	}
+
+	@Bean("threadPoolTaskExecutor")
+	public ThreadPoolTaskExecutor taskExecutor() {
+		ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
+		threadPoolTaskExecutor.setCorePoolSize(10);
+		threadPoolTaskExecutor.setMaxPoolSize(20);
+		threadPoolTaskExecutor.setQueueCapacity(25);
+		return threadPoolTaskExecutor;
 	}
 
 	public static void main(String[] args) {
