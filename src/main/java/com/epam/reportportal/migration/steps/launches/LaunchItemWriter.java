@@ -54,7 +54,7 @@ public class LaunchItemWriter implements ItemWriter<DBObject> {
 				commonItemWriter.writeTags((BasicDBList) it.get("tags"), INSERT_LAUNCH_ATTRIBUTES, id);
 				commonItemWriter.writeStatistics((DBObject) it.get("statistics"), INSERT_LAUNCH_STATISTICS, id);
 			} catch (Exception e) {
-				LOGGER.debug(String.format("Exception while inserting launch with uuid %s", ((ObjectId) it.get("_id")).toString()));
+				LOGGER.warn(String.format("Exception while inserting launch with uuid %s", ((ObjectId) it.get("_id")).toString()));
 			}
 		});
 	}

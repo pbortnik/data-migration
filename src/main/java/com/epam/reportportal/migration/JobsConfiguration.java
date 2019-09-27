@@ -4,10 +4,13 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
+import org.springframework.batch.core.job.builder.SimpleJobBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
 
 /**
  * @author Pavel Bortnik
@@ -40,24 +43,25 @@ public class JobsConfiguration {
 	private Step migrateLaunchNumberStep;
 
 	@Autowired
-	@Qualifier("migrateTestItemStep")
-	private Step migrateTestItemStep;
+	@Qualifier("levelItemsFlow")
+	private List<Step> levelItemsFlow;
 
 	@Autowired
 	private MigrationJobExecutionListener migrationJobExecutionListener;
 
 	@Bean
 	public Job job() {
-		return jobBuilderFactory.get("job")
+		SimpleJobBuilder job = jobBuilderFactory.get("job")
 				.listener(migrationJobExecutionListener)
-				.flow(migrateUserStep)
-				.next(migrateProjectsStep)
-				.next(migrateBtsStep)
-				.next(migrateLaunchStep)
-				.next(migrateLaunchNumberStep)
-				.next(migrateTestItemStep)
-				.end()
-				.build();
+				.start(migrateUserStep);
+//				.next(migrateProjectsStep)
+//				.next(migrateBtsStep)
+//				.next(migrateLaunchStep)
+//				.next(migrateLaunchNumberStep);
+		for (Step s : levelItemsFlow) {
+			job = job.next(s);
+		}
+		return job.build();
 	}
 
 }

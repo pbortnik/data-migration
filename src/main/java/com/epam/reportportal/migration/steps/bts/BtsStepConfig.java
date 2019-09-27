@@ -97,7 +97,7 @@ public class BtsStepConfig {
 						.append("project", ((String) item.get("project")).toLowerCase());
 
 			} catch (EmptyResultDataAccessException e) {
-				LOGGER.debug(String.format("Project with name '%s' not found. Bts  is ignored", item.get("projectRef")));
+				LOGGER.warn(String.format("Project with name '%s' not found. Bts  is ignored", item.get("projectRef")));
 				return null;
 			}
 		};
@@ -120,7 +120,7 @@ public class BtsStepConfig {
 			);
 			mapping.put(integrationName, id);
 		} catch (EmptyResultDataAccessException e) {
-			LOGGER.debug(String.format("Integration type with name '%s' not found.", integrationName));
+			LOGGER.warn(String.format("Integration type with name '%s' not found.", integrationName));
 		}
 	}
 

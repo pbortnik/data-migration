@@ -14,7 +14,7 @@ public class ChunkCountListener implements ChunkListener {
 
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
-	private int loggingInterval = 2000;
+	private int loggingInterval = 100;
 
 	@Override
 	public void beforeChunk(ChunkContext context) {
@@ -27,7 +27,7 @@ public class ChunkCountListener implements ChunkListener {
 		String stepName = context.getStepContext().getStepName();
 		// If the number of records processed so far is a multiple of the logging interval then output a log message.
 		if (count > 0 && count % loggingInterval == 0) {
-			LOGGER.info(String.format("%d items in '%s' step are processed", count, stepName));
+			LOGGER.error(String.format("%d items in '%s' step are processed", count, stepName));
 		}
 	}
 

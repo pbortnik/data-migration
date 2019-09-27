@@ -1,14 +1,13 @@
 package com.epam.reportportal.migration.steps.items;
 
 import com.epam.reportportal.migration.steps.CommonItemWriter;
-import com.github.benmanes.caffeine.cache.Cache;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -19,7 +18,6 @@ import org.springframework.util.StringUtils;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.epam.reportportal.migration.steps.items.TestProviderUtils.*;
 import static com.epam.reportportal.migration.steps.utils.MigrationUtils.toUtc;
@@ -27,12 +25,11 @@ import static com.epam.reportportal.migration.steps.utils.MigrationUtils.toUtc;
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
+@StepScope
 @Component("testItemWriter")
 public class TestItemWriter implements ItemWriter<DBObject> {
 
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
-
-	private static final String SELECT_ITEM_ID = "SELECT item_id FROM test_item WHERE test_item.uuid = :uid";
 
 	private static final String INSERT_ITEM = "INSERT INTO test_item (uuid, name, type, start_time, description, last_modified,"
 			+ "unique_id, has_children, has_retries, parent_id, launch_id) VALUES (:uid, :nm, :tp::TEST_ITEM_TYPE_ENUM,"
@@ -71,19 +68,15 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 	@Autowired
 	private CommonItemWriter commonItemWriter;
 
-	@Autowired
-	private Cache<String, Long> idsCache;
-
 	@Override
 	public void write(List<? extends DBObject> items) {
 		jdbc.execute("SET session_replication_role = REPLICA;");
+		long start = System.currentTimeMillis();
 		items.forEach(item -> {
-			if (retrieveParent(item) != null) {
-				Long itemId = writeTestItem(item);
-
-				String path = retrievePath(item);
+			Long itemId = writeTestItem(item);
+			if (itemId != null) {
+				String path = (String) item.get("pathIds");
 				updatePath(path, itemId);
-
 				writeItemResults(item, itemId);
 				commonItemWriter.writeStatistics((DBObject) item.get("statistics"), INSERT_ITEM_STATISTICS, itemId);
 				commonItemWriter.writeTags((BasicDBList) item.get("tags"), INSERT_ITEM_ATTRIBUTES, itemId);
@@ -99,6 +92,7 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 				}
 			}
 		});
+		System.out.println("writing" + (System.currentTimeMillis() - start) / 1000);
 	}
 
 	private void writeRetry(DBObject retry, DBObject mainItem, Long mainItemId, String mainPath) {
@@ -129,7 +123,12 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 	}
 
 	private Long writeTestItem(DBObject item) {
-		return jdbcTemplate.queryForObject(INSERT_ITEM, TEST_SOURCE_PROVIDER.createSqlParameterSource(item), Long.class);
+		try {
+			return jdbcTemplate.queryForObject(INSERT_ITEM, TEST_SOURCE_PROVIDER.createSqlParameterSource(item), Long.class);
+		} catch (Exception e) {
+			LOGGER.warn(String.format("Item '%s' already exists", item.get("_id").toString()));
+			return null;
+		}
 	}
 
 	private void writeItemResults(DBObject item, Long itemId) {
@@ -167,43 +166,6 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 			parameterSource.addValue("tid", ticketId);
 			jdbcTemplate.update(INSERT_TICKET_ISSUE, parameterSource);
 		});
-	}
-
-	private DBObject retrieveParent(DBObject item) {
-		String parent = (String) item.get("parent");
-		if (parent == null) {
-			return item;
-		}
-		Long parentId = idsCache.getIfPresent(parent);
-		if (parentId == null) {
-			try {
-				parentId = jdbcTemplate.queryForObject(SELECT_ITEM_ID, Collections.singletonMap("uid", parent), Long.class);
-				idsCache.put(parent, parentId);
-			} catch (EmptyResultDataAccessException e) {
-				LOGGER.debug(String.format("Parent with uuid '%s' not found. It is ignored.", parent));
-				return null;
-			}
-		}
-		item.put("parentId", parentId);
-		return item;
-	}
-
-	private String retrievePath(DBObject item) {
-		BasicDBList path = (BasicDBList) item.get("path");
-		String pathStr;
-		try {
-			pathStr = path.stream().map(mongoId -> {
-				Long id = idsCache.getIfPresent(mongoId);
-				if (id == null) {
-					id = jdbcTemplate.queryForObject(SELECT_ITEM_ID, Collections.singletonMap("uid", mongoId), Long.class);
-				}
-				return String.valueOf(id);
-			}).collect(Collectors.joining("."));
-			return pathStr;
-		} catch (EmptyResultDataAccessException e) {
-			LOGGER.debug(String.format("Item in path '%s' not found. Item is ignored.", path.toString()));
-			return null;
-		}
 	}
 
 }

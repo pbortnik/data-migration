@@ -20,7 +20,7 @@ import java.util.Map;
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
 @Component
-public class DatePartitioning implements Partitioner {
+public class LaunchDatePartitioning implements Partitioner {
 
 	@Autowired
 	private MongoOperations mongoOperations;

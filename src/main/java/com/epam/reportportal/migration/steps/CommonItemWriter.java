@@ -11,6 +11,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static com.epam.reportportal.migration.steps.StatisticsFieldsService.*;
@@ -87,8 +88,8 @@ public class CommonItemWriter {
 		}
 		jdbcTemplate.batchUpdate(insertItemParameters, parameters.stream().map(it -> {
 			MapSqlParameterSource params = new MapSqlParameterSource();
-			params.addValue("key", ((DBObject) it).get("key"));
-			params.addValue("val", ((DBObject) it).get("val"));
+			params.addValue("key", Optional.ofNullable(((DBObject) it).get("key")).orElse(""));
+			params.addValue("val", Optional.ofNullable(((DBObject) it).get("val")).orElse(""));
 			params.addValue("id", itemId);
 			return params;
 		}).toArray(SqlParameterSource[]::new));

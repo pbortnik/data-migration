@@ -81,7 +81,7 @@ public class LaunchNumberConfig {
 				DBObject projectIds = (DBObject) item.get("projectIds");
 				projectIds.put(String.valueOf(projectId), project.getValue());
 			} catch (EmptyResultDataAccessException e) {
-				LOGGER.debug(String.format("Project with name '%s' not found", projectName));
+				LOGGER.warn(String.format("Project with name '%s' not found", projectName));
 			}
 		}
 	}

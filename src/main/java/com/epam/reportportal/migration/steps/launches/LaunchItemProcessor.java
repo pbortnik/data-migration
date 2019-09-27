@@ -33,7 +33,7 @@ public class LaunchItemProcessor implements ItemProcessor<DBObject, DBObject> {
 			Long userID = jdbcTemplate.queryForObject(SELECT_USER_ID, Collections.singletonMap("lg", item.get("userRef")), Long.class);
 			item.put("userId", userID);
 		} catch (EmptyResultDataAccessException e) {
-			LOGGER.debug(String.format("User with name '%s' not found", item.get("userRef")));
+			LOGGER.warn(String.format("User with name '%s' not found", item.get("userRef")));
 		}
 		try {
 			Long projectId = jdbcTemplate.queryForObject(SELECT_PROJECT_ID,
@@ -42,7 +42,7 @@ public class LaunchItemProcessor implements ItemProcessor<DBObject, DBObject> {
 			);
 			item.put("projectId", projectId);
 		} catch (EmptyResultDataAccessException e) {
-			LOGGER.debug(String.format(
+			LOGGER.warn(String.format(
 					"Project with name '%s' not found. Launch with id '%s' is ignored",
 					item.get("projectRef"),
 					item.get("_id")

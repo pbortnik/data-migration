@@ -2,14 +2,16 @@ package com.epam.reportportal.migration;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import org.springframework.batch.support.transaction.ResourcelessTransactionManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import javax.sql.DataSource;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +32,7 @@ public class DataMigrationApplication {
 	@Bean
 	// mongo uuid -> postgres id
 	public Cache<String, Long> idsCache() {
-		return Caffeine.newBuilder().initialCapacity(20).maximumSize(1000).expireAfterAccess(10, TimeUnit.MINUTES).build();
+		return Caffeine.newBuilder().initialCapacity(5000).maximumSize(50000).expireAfterAccess(30, TimeUnit.MINUTES).build();
 	}
 
 	@Bean(name = "statisticsFields")
@@ -57,16 +59,15 @@ public class DataMigrationApplication {
 	@Bean("threadPoolTaskExecutor")
 	public ThreadPoolTaskExecutor taskExecutor() {
 		ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
-		threadPoolTaskExecutor.setCorePoolSize(10);
-		threadPoolTaskExecutor.setMaxPoolSize(20);
-		threadPoolTaskExecutor.setQueueCapacity(25);
+		threadPoolTaskExecutor.setCorePoolSize(12);
+		threadPoolTaskExecutor.setMaxPoolSize(50);
 		return threadPoolTaskExecutor;
 	}
 
 	@Bean
 	@Primary
-	public PlatformTransactionManager transactionManager() {
-		return new ResourcelessTransactionManager();
+	public PlatformTransactionManager transactionManager(@Autowired DataSource dataSource) {
+		return new DataSourceTransactionManager(dataSource);
 	}
 
 	public static void main(String[] args) {
