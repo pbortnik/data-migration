@@ -97,7 +97,7 @@ public class BtsStepConfig {
 						.append("project", ((String) item.get("project")).toLowerCase());
 
 			} catch (EmptyResultDataAccessException e) {
-				LOGGER.warn(String.format("Project with name '%s' not found. Bts  is ignored", item.get("projectRef")));
+				LOGGER.debug(String.format("Project with name '%s' not found. Bts  is ignored", item.get("projectRef")));
 				return null;
 			}
 		};
@@ -105,7 +105,7 @@ public class BtsStepConfig {
 
 	@Bean
 	public Step migrateBtsStep() {
-		return stepBuilderFactory.get("bts").<DBObject, DBObject>chunk(10).reader(btsMongoReader())
+		return stepBuilderFactory.get("bts").<DBObject, DBObject>chunk(200).reader(btsMongoReader())
 				.processor(btsItemProcessor())
 				.writer(btsItemWriter)
 				.listener(chunkCountListener)
@@ -120,7 +120,7 @@ public class BtsStepConfig {
 			);
 			mapping.put(integrationName, id);
 		} catch (EmptyResultDataAccessException e) {
-			LOGGER.info(String.format("Integration type with name '%s' not found.", integrationName));
+			LOGGER.debug(String.format("Integration type with name '%s' not found.", integrationName));
 		}
 	}
 

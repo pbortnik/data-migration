@@ -81,7 +81,7 @@ public class LaunchNumberConfig {
 				DBObject projectIds = (DBObject) item.get("projectIds");
 				projectIds.put(String.valueOf(projectId), project.getValue());
 			} catch (EmptyResultDataAccessException e) {
-				LOGGER.warn(String.format("Project with name '%s' not found", projectName));
+				LOGGER.debug(String.format("Project with name '%s' not found", projectName));
 			}
 		}
 	}
@@ -107,7 +107,7 @@ public class LaunchNumberConfig {
 
 	@Bean(name = "migrateLaunchNumberStep")
 	public Step migrateLaunchNumberStep() {
-		return stepBuilderFactory.get("launchNumber").<DBObject, DBObject>chunk(30).reader(launchNumberReader())
+		return stepBuilderFactory.get("launchNumber").<DBObject, DBObject>chunk(500).reader(launchNumberReader())
 				.processor(launchNumberProcessor())
 				.writer(launchNumberWriter())
 				.listener(chunkListener)

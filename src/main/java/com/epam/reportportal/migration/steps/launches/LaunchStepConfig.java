@@ -81,7 +81,7 @@ public class LaunchStepConfig {
 
 	@Bean
 	public Step slaveLaunchStep() {
-		return stepBuilderFactory.get("slaveLaunchStep").<DBObject, DBObject>chunk(50).reader(launchItemReader(null, null))
+		return stepBuilderFactory.get("slaveLaunchStep").<DBObject, DBObject>chunk(1000).reader(launchItemReader(null, null))
 				.processor(launchItemProcessor)
 				.writer(launchItemWriter)
 				.build();

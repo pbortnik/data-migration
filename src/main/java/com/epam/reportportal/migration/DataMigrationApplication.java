@@ -2,10 +2,13 @@ package com.epam.reportportal.migration;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import org.springframework.batch.support.transaction.ResourcelessTransactionManager;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -58,6 +61,12 @@ public class DataMigrationApplication {
 		threadPoolTaskExecutor.setMaxPoolSize(20);
 		threadPoolTaskExecutor.setQueueCapacity(25);
 		return threadPoolTaskExecutor;
+	}
+
+	@Bean
+	@Primary
+	public PlatformTransactionManager transactionManager() {
+		return new ResourcelessTransactionManager();
 	}
 
 	public static void main(String[] args) {

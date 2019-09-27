@@ -54,7 +54,7 @@ public class ItemsStepConfig {
 	@Bean
 	@StepScope
 	public MongoItemReader<DBObject> testItemReader() {
-		MongoItemReader<DBObject> itemReader = MigrationUtils.getMongoItemReader(mongoTemplate, "launch");
+		MongoItemReader<DBObject> itemReader = MigrationUtils.getMongoItemReader(mongoTemplate, "testItem");
 		java.util.Date dateFrom = Date.from(LocalDate.parse(keepFrom).atStartOfDay(ZoneOffset.UTC).toInstant().minus(5, ChronoUnit.DAYS));
 		itemReader.setQuery("{'start_time': { $gte : ?0 }}");
 		itemReader.setParameterValues(Collections.singletonList(dateFrom));
@@ -66,7 +66,7 @@ public class ItemsStepConfig {
 
 	@Bean(name = "migrateTestItemStep")
 	public Step migrateTestItemStep() {
-		return stepBuilderFactory.get("testItem").<DBObject, DBObject>chunk(50).reader(testItemReader())
+		return stepBuilderFactory.get("testItem").<DBObject, DBObject>chunk(1000).reader(testItemReader())
 				.processor(testItemProcessor)
 				.writer(testItemWriter)
 				.listener(chunkCountListener)

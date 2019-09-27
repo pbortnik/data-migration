@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.Map;
@@ -36,6 +38,7 @@ public class StatisticsFieldsService {
 	@Autowired
 	private NamedParameterJdbcTemplate jdbcTemplate;
 
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public Long getStatisticsFieldId(String fieldRegex, String concreteField) {
 		String fieldName = String.format(fieldRegex, concreteField.toLowerCase());
 		Long defectFieldId = statisticsFields.get(fieldName);

@@ -49,7 +49,7 @@ public class ProjectStepConfig {
 
 	@Bean
 	public Step migrateProjectsStep() {
-		return stepBuilderFactory.get("project").<DBObject, DBObject>chunk(50).reader(projectMongoItemReader())
+		return stepBuilderFactory.get("project").<DBObject, DBObject>chunk(500).reader(projectMongoItemReader())
 				.processor(projectItemProcessor)
 				.writer(projectItemWriter)
 				.listener(chunkCountListener)

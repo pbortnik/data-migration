@@ -63,7 +63,7 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 				launchId = jdbcTemplate.queryForObject(SELECT_LAUNCH_ID, Collections.singletonMap("uid", launchRef), Long.class);
 				idsCache.put(launchRef, launchId);
 			} catch (EmptyResultDataAccessException e) {
-				LOGGER.warn(String.format("Launch with uuid '%s' not found. It is ignored.", launchRef));
+				LOGGER.debug(String.format("Launch with uuid '%s' not found. It is ignored.", launchRef));
 				return null;
 			}
 		}
@@ -87,7 +87,7 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 					retrieveBts(tickets);
 				}
 			} catch (EmptyResultDataAccessException e) {
-				LOGGER.warn(String.format("Issue type with locator '%s' not found. It is ignored.", issue));
+				LOGGER.debug(String.format("Issue type with locator '%s' not found. It is ignored.", issue));
 			}
 		}
 	}
@@ -99,7 +99,7 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 				Map bts = jdbcTemplate.queryForObject(SELECT_BTS_ID, Collections.singletonMap("mid", systemId), btsRowMapper);
 				((DBObject) item).putAll(bts);
 			} catch (EmptyResultDataAccessException e) {
-				LOGGER.warn(String.format("Bts with id '%s' not found. It is ignored.", systemId));
+				LOGGER.debug(String.format("Bts with id '%s' not found. It is ignored.", systemId));
 			}
 		});
 	}

@@ -43,15 +43,19 @@ public class JobsConfiguration {
 	@Qualifier("migrateTestItemStep")
 	private Step migrateTestItemStep;
 
+	@Autowired
+	private MigrationJobExecutionListener migrationJobExecutionListener;
+
 	@Bean
 	public Job job() {
 		return jobBuilderFactory.get("job")
-				.flow(migrateLaunchStep)
-//				.next(migrateProjectsStep)
-//				.next(migrateBtsStep)
-//				.next(migrateLaunchStep)
-//				.next(migrateLaunchNumberStep)
-//				.next(migrateTestItemStep)
+				.listener(migrationJobExecutionListener)
+				.flow(migrateUserStep)
+				.next(migrateProjectsStep)
+				.next(migrateBtsStep)
+				.next(migrateLaunchStep)
+				.next(migrateLaunchNumberStep)
+				.next(migrateTestItemStep)
 				.end()
 				.build();
 	}

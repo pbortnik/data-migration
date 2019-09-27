@@ -180,7 +180,7 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 				parentId = jdbcTemplate.queryForObject(SELECT_ITEM_ID, Collections.singletonMap("uid", parent), Long.class);
 				idsCache.put(parent, parentId);
 			} catch (EmptyResultDataAccessException e) {
-				LOGGER.warn(String.format("Parent with uuid '%s' not found. It is ignored.", parent));
+				LOGGER.debug(String.format("Parent with uuid '%s' not found. It is ignored.", parent));
 				return null;
 			}
 		}
@@ -201,7 +201,7 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 			}).collect(Collectors.joining("."));
 			return pathStr;
 		} catch (EmptyResultDataAccessException e) {
-			LOGGER.warn(String.format("Item in path '%s' not found. Item is ignored.", path.toString()));
+			LOGGER.debug(String.format("Item in path '%s' not found. Item is ignored.", path.toString()));
 			return null;
 		}
 	}

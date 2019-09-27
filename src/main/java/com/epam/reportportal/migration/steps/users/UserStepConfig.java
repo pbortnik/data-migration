@@ -62,7 +62,7 @@ public class UserStepConfig {
 
 	@Bean
 	public Step migrateUsersStep() {
-		return stepBuilderFactory.get("user").<DBObject, DBObject>chunk(200).reader(userMongoItemReader())
+		return stepBuilderFactory.get("user").<DBObject, DBObject>chunk(1000).reader(userMongoItemReader())
 				.processor(userItemProcessor())
 				.writer(userItemWriter())
 				.listener(chunkCountListener)
