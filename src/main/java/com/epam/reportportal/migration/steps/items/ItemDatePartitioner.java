@@ -70,7 +70,7 @@ public class ItemDatePartitioner implements Partitioner {
 		this.keepFrom = keepFrom;
 	}
 
-	public void setPathLevel(int pathLevel) {
+	public void setPathLevel(Integer pathLevel) {
 		this.pathLevel = pathLevel;
 	}
 }

@@ -50,6 +50,7 @@ public class LaunchStepConfig {
 	private ChunkListener chunkCountListener;
 
 	@Autowired
+	@Qualifier("launchDatePartitioning")
 	private Partitioner datePartitioning;
 
 	@Autowired
