@@ -29,7 +29,7 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 
 	private static final String SELECT_LAUNCH_ID = "SELECT id FROM launch WHERE launch.uuid = :uid";
 
-	public static final String SELECT_ITEM_ID = "SELECT item_id FROM test_item WHERE test_item.uuid = :uid";
+	private static final String SELECT_ITEM_ID = "SELECT item_id FROM test_item WHERE test_item.uuid = :uid";
 
 	private static final String SELECT_ISSUE_TYPE_ID = "SELECT id FROM issue_type WHERE issue_type.locator = :loc";
 
@@ -50,14 +50,12 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 
 	@Override
 	public DBObject process(DBObject item) {
-		long start = System.currentTimeMillis();
 		if (retrieveLaunch(item) == null) {
 			return null;
 		}
 		retrieveParent(item);
 		retrieveParentPath(item);
 		retrieveIssue(item);
-		System.out.println("Proccessing" + ((System.currentTimeMillis() - start)));
 		return item;
 	}
 

@@ -17,6 +17,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.Date;
@@ -56,8 +58,28 @@ public class ItemsStepConfig {
 	private String keepFrom;
 
 	@Bean
-	public Function<Integer, Step> myPrototypeFactory() {
+	public Function<Integer, Step> itemStepFactory() {
 		return this::migrateItemStep;
+	}
+
+	@Bean
+	public List<Step> levelItemsFlow() {
+		int pathSize = 0;
+		while (true) {
+			boolean exists = mongoTemplate.exists(Query.query(Criteria.where("path").size(pathSize)), "testItem");
+			if (!exists) {
+				pathSize--;
+				break;
+			}
+			pathSize++;
+		}
+
+		List<Step> steps = new LinkedList<>();
+		for (Integer i = 0; i <= pathSize; i++) {
+			Step step = itemStepFactory().apply(i);
+			steps.add(step);
+		}
+		return steps;
 	}
 
 	@Bean
@@ -85,7 +107,8 @@ public class ItemsStepConfig {
 	@Bean
 	@Scope(BeanDefinition.SCOPE_PROTOTYPE)
 	public Step slaveItemStep(int i) {
-		return stepBuilderFactory.get("slaveItemStep." + i).<DBObject, DBObject>chunk(1000).reader(testItemReader(null, null, null))
+		return stepBuilderFactory.get("slaveItemStep." + i).<DBObject, DBObject>chunk(1000)
+				.reader(testItemReader(null, null, null))
 				.processor(testItemProcessor)
 				.writer(testItemWriter)
 				.build();

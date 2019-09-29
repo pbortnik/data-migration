@@ -71,7 +71,6 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 	@Override
 	public void write(List<? extends DBObject> items) {
 		jdbc.execute("SET session_replication_role = REPLICA;");
-		long start = System.currentTimeMillis();
 		items.forEach(item -> {
 			Long itemId = writeTestItem(item);
 			if (itemId != null) {
@@ -92,7 +91,6 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 				}
 			}
 		});
-		System.out.println("writing" + (System.currentTimeMillis() - start) / 1000);
 	}
 
 	private void writeRetry(DBObject retry, DBObject mainItem, Long mainItemId, String mainPath) {
