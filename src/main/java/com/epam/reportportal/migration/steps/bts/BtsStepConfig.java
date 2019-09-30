@@ -33,6 +33,8 @@ public class BtsStepConfig {
 
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
+	private static final int CHUNK_SIZE = 200;
+
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
 
@@ -64,6 +66,7 @@ public class BtsStepConfig {
 		}
 		MongoItemReader<DBObject> itemReader = MigrationUtils.getMongoItemReader(mongoTemplate, "externalSystem");
 		itemReader.setQuery("{'externalSystemType' : {$in : ['JIRA', 'RALLY']}}");
+		itemReader.setPageSize(CHUNK_SIZE);
 		return itemReader;
 	}
 
@@ -97,7 +100,7 @@ public class BtsStepConfig {
 						.append("project", ((String) item.get("project")).toLowerCase());
 
 			} catch (EmptyResultDataAccessException e) {
-				LOGGER.warn(String.format("Project with name '%s' not found. Bts  is ignored", item.get("projectRef")));
+				LOGGER.debug(String.format("Project with name '%s' not found. Bts  is ignored", item.get("projectRef")));
 				return null;
 			}
 		};
@@ -105,7 +108,7 @@ public class BtsStepConfig {
 
 	@Bean
 	public Step migrateBtsStep() {
-		return stepBuilderFactory.get("bts").<DBObject, DBObject>chunk(200).reader(btsMongoReader())
+		return stepBuilderFactory.get("bts").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(btsMongoReader())
 				.processor(btsItemProcessor())
 				.writer(btsItemWriter)
 				.listener(chunkCountListener)
@@ -120,7 +123,7 @@ public class BtsStepConfig {
 			);
 			mapping.put(integrationName, id);
 		} catch (EmptyResultDataAccessException e) {
-			LOGGER.warn(String.format("Integration type with name '%s' not found.", integrationName));
+			LOGGER.debug(String.format("Integration type with name '%s' not found.", integrationName));
 		}
 	}
 

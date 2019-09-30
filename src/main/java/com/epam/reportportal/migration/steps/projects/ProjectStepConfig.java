@@ -24,6 +24,8 @@ import java.util.Map;
 @SuppressWarnings("unchecked")
 public class ProjectStepConfig {
 
+	private static final int CHUNK_SIZE = 1_000;
+
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
 
@@ -44,12 +46,14 @@ public class ProjectStepConfig {
 
 	@Bean
 	public MongoItemReader<DBObject> projectMongoItemReader() {
-		return MigrationUtils.getMongoItemReader(mongoTemplate, "project");
+		MongoItemReader<DBObject> project = MigrationUtils.getMongoItemReader(mongoTemplate, "project");
+		project.setPageSize(CHUNK_SIZE);
+		return project;
 	}
 
 	@Bean
 	public Step migrateProjectsStep() {
-		return stepBuilderFactory.get("project").<DBObject, DBObject>chunk(500).reader(projectMongoItemReader())
+		return stepBuilderFactory.get("project").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(projectMongoItemReader())
 				.processor(projectItemProcessor)
 				.writer(projectItemWriter)
 				.listener(chunkCountListener)

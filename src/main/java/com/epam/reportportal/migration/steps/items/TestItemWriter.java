@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -55,7 +54,7 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 					+ "VALUES (:id, :loc, :descr, :aa, :iga)";
 
 	private static final String INSERT_TICKET = "INSERT INTO ticket (ticket_id, submitter, submit_date, bts_url, bts_project, url) VALUES "
-			+ "(:tid, :sub, :sd, :burl, :bpr, :url)";
+			+ "(:tid, :sub, :sd, :burl, :bpr, :url) RETURNING ticket.id";
 
 	private static final String INSERT_TICKET_ISSUE = "INSERT INTO issue_ticket (issue_id, ticket_id) VALUES (:id, :tid)";
 
@@ -75,7 +74,7 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 			Long itemId = writeTestItem(item);
 			if (itemId != null) {
 				String path = (String) item.get("pathIds");
-				updatePath(path, itemId);
+				item.put("pathIds", updatePath(path, itemId));
 				writeItemResults(item, itemId);
 				commonItemWriter.writeStatistics((DBObject) item.get("statistics"), INSERT_ITEM_STATISTICS, itemId);
 				commonItemWriter.writeTags((BasicDBList) item.get("tags"), INSERT_ITEM_ATTRIBUTES, itemId);
@@ -87,23 +86,22 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 
 				BasicDBList retries = (BasicDBList) item.get("retries");
 				if (!CollectionUtils.isEmpty(retries)) {
-					retries.forEach(retry -> writeRetry((DBObject) retry, item, itemId, path));
+					retries.forEach(retry -> writeRetry((DBObject) retry, item, itemId));
 				}
 			}
 		});
 	}
 
-	private void writeRetry(DBObject retry, DBObject mainItem, Long mainItemId, String mainPath) {
+	private void writeRetry(DBObject retry, DBObject mainItem, Long mainItemId) {
 		MapSqlParameterSource sqlParameterSource = (MapSqlParameterSource) RETRY_SOURCE_PROVIDER.createSqlParameterSource(retry);
 		sqlParameterSource.addValue("par", mainItem.get("parentId"));
 		sqlParameterSource.addValue("rtrof", mainItemId);
 
 		Long retryId = jdbcTemplate.queryForObject(INSERT_RETRY_ITEM, sqlParameterSource, Long.class);
 
-		updatePath(mainPath, retryId);
+		updatePath((String) mainItem.get("pathIds"), retryId);
 
 		writeItemResults(retry, retryId);
-		jdbcTemplate.update(UPDATE_PATH, Collections.singletonMap("id", retryId));
 		commonItemWriter.writeTags((BasicDBList) retry.get("tags"), INSERT_ITEM_ATTRIBUTES, retryId);
 		commonItemWriter.writeParams((BasicDBList) retry.get("parameters"), INSERT_ITEM_PARAMETERS, retryId);
 	}
@@ -111,20 +109,23 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 	private String updatePath(String path, Long itemId) {
 		MapSqlParameterSource parameterSource = new MapSqlParameterSource();
 		parameterSource.addValue("id", itemId);
+		String result = path;
 		if (!StringUtils.isEmpty(path)) {
-			parameterSource.addValue("path", path + "." + itemId);
+			result = path + "." + itemId;
+			parameterSource.addValue("path", result);
 		} else {
-			parameterSource.addValue("path", String.valueOf(itemId));
+			result = String.valueOf(itemId);
+			parameterSource.addValue("path", result);
 		}
 		jdbcTemplate.update(UPDATE_PATH, parameterSource);
-		return path;
+		return result;
 	}
 
 	private Long writeTestItem(DBObject item) {
 		try {
 			return jdbcTemplate.queryForObject(INSERT_ITEM, TEST_SOURCE_PROVIDER.createSqlParameterSource(item), Long.class);
 		} catch (Exception e) {
-			LOGGER.warn(String.format("Item '%s' already exists", item.get("_id").toString()));
+			LOGGER.debug(String.format("Item '%s' already exists", item.get("_id").toString()));
 			return null;
 		}
 	}

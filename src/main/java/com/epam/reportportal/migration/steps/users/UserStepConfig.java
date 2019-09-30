@@ -24,6 +24,8 @@ import javax.sql.DataSource;
 @Configuration
 public class UserStepConfig {
 
+	private static final int CHUNK_SIZE = 1_000;
+
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
 
@@ -42,7 +44,9 @@ public class UserStepConfig {
 
 	@Bean
 	public MongoItemReader<DBObject> userMongoItemReader() {
-		return MigrationUtils.getMongoItemReader(mongoTemplate, "user");
+		MongoItemReader<DBObject> user = MigrationUtils.getMongoItemReader(mongoTemplate, "user");
+		user.setPageSize(CHUNK_SIZE);
+		return user;
 	}
 
 	@Bean
@@ -62,7 +66,7 @@ public class UserStepConfig {
 
 	@Bean
 	public Step migrateUsersStep() {
-		return stepBuilderFactory.get("user").<DBObject, DBObject>chunk(1000).reader(userMongoItemReader())
+		return stepBuilderFactory.get("user").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(userMongoItemReader())
 				.processor(userItemProcessor())
 				.writer(userItemWriter())
 				.listener(chunkCountListener)

@@ -30,11 +30,11 @@ public class ItemDatePartitioner implements Partitioner {
 		Date minDate = new Date();
 		Date maxDate = new Date();
 
-		mongoOperations.executeQuery(Query.query(Criteria.where("start_time").gte(fromDate).and("path").size(pathLevel))
+		mongoOperations.executeQuery(Query.query(Criteria.where("start_time").gte(fromDate).and("pathLevel").is(pathLevel))
 				.with(new Sort(Sort.Direction.ASC, "start_time"))
 				.limit(1), "testItem", dbObject -> minDate.setTime(((Date) dbObject.get("start_time")).getTime()));
 
-		mongoOperations.executeQuery(Query.query(Criteria.where("start_time").gte(fromDate).and("path").size(pathLevel))
+		mongoOperations.executeQuery(Query.query(Criteria.where("start_time").gte(fromDate).and("pathLevel").is(pathLevel))
 				.with(new Sort(Sort.Direction.DESC, "start_time"))
 				.limit(1), "testItem", dbObject -> maxDate.setTime(((Date) dbObject.get("start_time")).getTime()));
 

@@ -19,7 +19,6 @@ public class MigrationJobExecutionListener implements JobExecutionListener {
 
 	@Override
 	public void beforeJob(JobExecution jobExecution) {
-
 	}
 
 	@Override

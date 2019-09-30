@@ -37,7 +37,7 @@ public class ProjectItemProcessor implements ItemProcessor<DBObject, DBObject> {
 		List<DBObject> users = (List<DBObject>) project.get("users");
 
 		if (CollectionUtils.isEmpty(users)) {
-			LOGGER.warn(String.format("Project '%s' hasn't users. It is ignored", project.get("_id")));
+			LOGGER.debug(String.format("Project '%s' hasn't users. It is ignored", project.get("_id")));
 			return null;
 		}
 
@@ -50,7 +50,7 @@ public class ProjectItemProcessor implements ItemProcessor<DBObject, DBObject> {
 						);
 						user.put("userId", userID);
 					} catch (EmptyResultDataAccessException e) {
-						LOGGER.warn(String.format("User with name '%s' not found", user.get("login")));
+						LOGGER.debug(String.format("User with name '%s' not found", user.get("login")));
 					}
 				})
 				.filter(it -> it.get("userId") != null)

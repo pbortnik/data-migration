@@ -21,18 +21,18 @@ public class DataMigrationApplication {
 
 	@Bean
 	public Cache<String, Long> customStatisticsFieldsCache() {
-		return Caffeine.newBuilder().initialCapacity(20).maximumSize(100).expireAfterAccess(10, TimeUnit.MINUTES).build();
+		return Caffeine.newBuilder().initialCapacity(100).maximumSize(1000).expireAfterAccess(30, TimeUnit.MINUTES).build();
 	}
 
 	@Bean
 	public Cache<String, Long> locatorsFieldsCache() {
-		return Caffeine.newBuilder().initialCapacity(20).maximumSize(100).expireAfterAccess(10, TimeUnit.MINUTES).build();
+		return Caffeine.newBuilder().initialCapacity(100).maximumSize(1000).expireAfterAccess(30, TimeUnit.MINUTES).build();
 	}
 
 	@Bean
 	// mongo uuid -> postgres id
 	public Cache<String, Long> idsCache() {
-		return Caffeine.newBuilder().initialCapacity(5000).maximumSize(50000).expireAfterAccess(30, TimeUnit.MINUTES).build();
+		return Caffeine.newBuilder().initialCapacity(5_000_000).maximumSize(5_000_000).expireAfterAccess(30, TimeUnit.MINUTES).build();
 	}
 
 	@Bean(name = "statisticsFields")

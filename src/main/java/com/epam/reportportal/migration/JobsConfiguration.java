@@ -51,13 +51,13 @@ public class JobsConfiguration {
 
 	@Bean
 	public Job job() {
-		SimpleJobBuilder job = jobBuilderFactory.get("job")
+		SimpleJobBuilder job = jobBuilderFactory.get("migartionJob")
 				.listener(migrationJobExecutionListener)
-				.start(migrateUserStep);
-//				.next(migrateProjectsStep)
-//				.next(migrateBtsStep)
-//				.next(migrateLaunchStep)
-//				.next(migrateLaunchNumberStep);
+				.start(migrateUserStep)
+				.next(migrateProjectsStep)
+				.next(migrateBtsStep)
+				.next(migrateLaunchStep)
+				.next(migrateLaunchNumberStep);
 		for (Step s : levelItemsFlow) {
 			job = job.next(s);
 		}

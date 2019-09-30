@@ -11,6 +11,7 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,6 +35,12 @@ public class LaunchNumberConfig {
 
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
+	private static final int CHUNK_SIZE = 500;
+
+	private static final String SELECT_LAUNCH_EXISTS = "SELECT exists(SELECT 1 FROM launch WHERE name=:nm)";
+
+	private static final String INSERT_LAUNCH_NUMBER = "INSERT INTO launch_number (project_id, launch_name, number) VALUES (:pr, :ln, :num)";
+
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
 
@@ -46,12 +53,21 @@ public class LaunchNumberConfig {
 	@Autowired
 	private ChunkListener chunkListener;
 
-	@Bean
-	public ItemReader<DBObject> launchNumberReader() {
-		return MigrationUtils.getMongoItemReader(mongoTemplate, "launchMetaInfo");
+	@Bean(name = "migrateLaunchNumberStep")
+	public Step migrateLaunchNumberStep() {
+		return stepBuilderFactory.get("launchNumber").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(launchNumberReader())
+				.processor(launchNumberProcessor())
+				.writer(launchNumberWriter())
+				.listener(chunkListener)
+				.build();
 	}
 
-	private static final String SELECT_LAUNCH_EXISTS = "SELECT exists(SELECT 1 FROM launch WHERE name=:nm)";
+	@Bean
+	public ItemReader<DBObject> launchNumberReader() {
+		MongoItemReader<DBObject> launchMetaInfo = MigrationUtils.getMongoItemReader(mongoTemplate, "launchMetaInfo");
+		launchMetaInfo.setPageSize(CHUNK_SIZE);
+		return launchMetaInfo;
+	}
 
 	@Bean
 	public ItemProcessor<DBObject, DBObject> launchNumberProcessor() {
@@ -73,21 +89,6 @@ public class LaunchNumberConfig {
 		};
 	}
 
-	private void updateDbObject(DBObject item, Map.Entry project) {
-		if (project != null) {
-			String projectName = (String) project.getKey();
-			try {
-				Long projectId = jdbcTemplate.queryForObject(SELECT_PROJECT_ID, Collections.singletonMap("name", projectName), Long.class);
-				DBObject projectIds = (DBObject) item.get("projectIds");
-				projectIds.put(String.valueOf(projectId), project.getValue());
-			} catch (EmptyResultDataAccessException e) {
-				LOGGER.warn(String.format("Project with name '%s' not found", projectName));
-			}
-		}
-	}
-
-	private static final String INSERT_LAUNCH_NUMBER = "INSERT INTO launch_number (project_id, launch_name, number) VALUES (:pr, :ln, :num)";
-
 	@Bean
 	public ItemWriter<DBObject> launchNumberWriter() {
 		return it -> {
@@ -105,13 +106,17 @@ public class LaunchNumberConfig {
 		};
 	}
 
-	@Bean(name = "migrateLaunchNumberStep")
-	public Step migrateLaunchNumberStep() {
-		return stepBuilderFactory.get("launchNumber").<DBObject, DBObject>chunk(500).reader(launchNumberReader())
-				.processor(launchNumberProcessor())
-				.writer(launchNumberWriter())
-				.listener(chunkListener)
-				.build();
+	private void updateDbObject(DBObject item, Map.Entry project) {
+		if (project != null) {
+			String projectName = (String) project.getKey();
+			try {
+				Long projectId = jdbcTemplate.queryForObject(SELECT_PROJECT_ID, Collections.singletonMap("name", projectName), Long.class);
+				DBObject projectIds = (DBObject) item.get("projectIds");
+				projectIds.put(String.valueOf(projectId), project.getValue());
+			} catch (EmptyResultDataAccessException e) {
+				LOGGER.debug(String.format("Project with name '%s' not found", projectName));
+			}
+		}
 	}
 
 }

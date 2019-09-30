@@ -28,6 +28,8 @@ import java.util.List;
 @Configuration
 public class LaunchStepConfig {
 
+	private static final int CHUNK_SIZE = 5_000;
+
 	@Value("${rp.launch.keepFrom}")
 	private String keepFrom;
 
@@ -66,6 +68,7 @@ public class LaunchStepConfig {
 		list.add(new Date(minTime));
 		list.add(new Date(maxTime));
 		itemReader.setParameterValues(list);
+		itemReader.setPageSize(CHUNK_SIZE);
 		return itemReader;
 	}
 
@@ -82,7 +85,7 @@ public class LaunchStepConfig {
 
 	@Bean
 	public Step slaveLaunchStep() {
-		return stepBuilderFactory.get("slaveLaunchStep").<DBObject, DBObject>chunk(1000).reader(launchItemReader(null, null))
+		return stepBuilderFactory.get("slaveLaunchStep").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(launchItemReader(null, null))
 				.processor(launchItemProcessor)
 				.writer(launchItemWriter)
 				.build();

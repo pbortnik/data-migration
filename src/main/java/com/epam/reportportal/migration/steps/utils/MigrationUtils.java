@@ -6,6 +6,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Date;
@@ -25,6 +26,13 @@ public class MigrationUtils {
 			return null;
 		}
 		return Timestamp.valueOf(LocalDateTime.ofInstant(date.toInstant(), ZoneOffset.UTC));
+	}
+
+	public static Timestamp toUtc(Long date) {
+		if (date == null) {
+			return null;
+		}
+		return Timestamp.valueOf(LocalDateTime.ofInstant(Instant.ofEpochMilli(date), ZoneOffset.UTC));
 	}
 
 	public static MongoItemReader<DBObject> getMongoItemReader(MongoTemplate mongoTemplate, String collection) {

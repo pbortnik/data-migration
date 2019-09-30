@@ -16,6 +16,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -69,9 +70,8 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 			try {
 				launchId = jdbcTemplate.queryForObject(SELECT_LAUNCH_ID, Collections.singletonMap("uid", launchRef), Long.class);
 				idsCache.put(launchRef, launchId);
-				System.out.println("id cache size " + idsCache.estimatedSize());
 			} catch (EmptyResultDataAccessException e) {
-				LOGGER.warn(String.format("Launch with uuid '%s' not found. It is ignored.", launchRef));
+				LOGGER.debug(String.format("Launch with uuid '%s' not found. It is ignored.", launchRef));
 				return null;
 			}
 		}
@@ -90,7 +90,7 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 				parentId = jdbcTemplate.queryForObject(SELECT_ITEM_ID, Collections.singletonMap("uid", parent), Long.class);
 				idsCache.put(parent, parentId);
 			} catch (EmptyResultDataAccessException e) {
-				LOGGER.warn(String.format("Parent with uuid '%s' not found. It is ignored.", parent));
+				LOGGER.debug(String.format("Parent with uuid '%s' not found. It is ignored.", parent));
 				return null;
 			}
 		}
@@ -111,24 +111,27 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 				issue.put("issueTypeId", issueTypeId);
 				BasicDBList tickets = (BasicDBList) issue.get("externalSystemIssues");
 				if (!CollectionUtils.isEmpty(tickets)) {
-					retrieveBts(tickets);
+					tickets = retrieveBts(tickets);
+					issue.put("externalSystemIssues", tickets);
 				}
 			} catch (EmptyResultDataAccessException e) {
-				LOGGER.warn(String.format("Issue type with locator '%s' not found. It is ignored.", issue));
+				LOGGER.debug(String.format("Issue type with locator '%s' not found. It is ignored.", issue));
 			}
 		}
 	}
 
-	private void retrieveBts(BasicDBList tickets) {
-		tickets.forEach(item -> {
+	private BasicDBList retrieveBts(BasicDBList tickets) {
+		return tickets.stream().map(item -> {
 			String systemId = (String) ((DBObject) item).get("externalSystemId");
 			try {
 				Map bts = jdbcTemplate.queryForObject(SELECT_BTS_ID, Collections.singletonMap("mid", systemId), btsRowMapper);
 				((DBObject) item).putAll(bts);
+				return item;
 			} catch (EmptyResultDataAccessException e) {
-				LOGGER.warn(String.format("Bts with id '%s' not found. It is ignored.", systemId));
+				LOGGER.debug(String.format("Bts with id '%s' not found. It is ignored.", systemId));
+				return null;
 			}
-		});
+		}).filter(Objects::nonNull).collect(Collectors.toCollection(BasicDBList::new));
 	}
 
 	private void retrieveParentPath(DBObject item) {
@@ -144,7 +147,7 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 			}).collect(Collectors.joining("."));
 			item.put("pathIds", pathStr);
 		} catch (EmptyResultDataAccessException e) {
-			LOGGER.warn(String.format("Item in path '%s' not found. Item is ignored.", path.toString()));
+			LOGGER.debug(String.format("Item in path '%s' not found. Item is ignored.", path.toString()));
 		}
 	}
 }

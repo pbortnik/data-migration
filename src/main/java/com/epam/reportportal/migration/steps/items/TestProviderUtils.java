@@ -54,7 +54,7 @@ public class TestProviderUtils {
 		MapSqlParameterSource parameterSource = new MapSqlParameterSource();
 		parameterSource.addValue("tid", ticket.get("ticketId"));
 		parameterSource.addValue("sub", ticket.get("submitter"));
-		parameterSource.addValue("sd", toUtc((Date) ticket.get("submitDate")));
+		parameterSource.addValue("sd", toUtc((Long) ticket.get("submitDate")));
 		parameterSource.addValue("burl", ticket.get("burl"));
 		parameterSource.addValue("bpr", ticket.get("project"));
 		parameterSource.addValue("url", ticket.get("url"));
