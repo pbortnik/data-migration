@@ -15,6 +15,7 @@ import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -35,7 +36,7 @@ public class LaunchNumberConfig {
 
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
-	private static final int CHUNK_SIZE = 500;
+	private static final int CHUNK_SIZE = 1000;
 
 	private static final String SELECT_LAUNCH_EXISTS = "SELECT exists(SELECT 1 FROM launch WHERE name=:nm)";
 
@@ -53,11 +54,15 @@ public class LaunchNumberConfig {
 	@Autowired
 	private ChunkListener chunkListener;
 
+	@Autowired
+	private TaskExecutor threadPoolTaskExecutor;
+
 	@Bean(name = "migrateLaunchNumberStep")
 	public Step migrateLaunchNumberStep() {
 		return stepBuilderFactory.get("launchNumber").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(launchNumberReader())
 				.processor(launchNumberProcessor())
 				.writer(launchNumberWriter())
+				.taskExecutor(threadPoolTaskExecutor)
 				.listener(chunkListener)
 				.build();
 	}

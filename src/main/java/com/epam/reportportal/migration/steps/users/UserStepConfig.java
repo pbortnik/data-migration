@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
@@ -24,7 +25,7 @@ import javax.sql.DataSource;
 @Configuration
 public class UserStepConfig {
 
-	private static final int CHUNK_SIZE = 1_000;
+	private static final int CHUNK_SIZE = 100;
 
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
@@ -41,6 +42,9 @@ public class UserStepConfig {
 	@Autowired
 	@Qualifier("chunkCountListener")
 	private ChunkListener chunkCountListener;
+
+	@Autowired
+	private TaskExecutor threadPoolTaskExecutor;
 
 	@Bean
 	public MongoItemReader<DBObject> userMongoItemReader() {
@@ -70,6 +74,7 @@ public class UserStepConfig {
 				.processor(userItemProcessor())
 				.writer(userItemWriter())
 				.listener(chunkCountListener)
+				.taskExecutor(threadPoolTaskExecutor)
 				.build();
 	}
 

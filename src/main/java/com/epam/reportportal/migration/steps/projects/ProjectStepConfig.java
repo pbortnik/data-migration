@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 import java.util.HashMap;
@@ -24,7 +25,7 @@ import java.util.Map;
 @SuppressWarnings("unchecked")
 public class ProjectStepConfig {
 
-	private static final int CHUNK_SIZE = 1_000;
+	private static final int CHUNK_SIZE = 100;
 
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
@@ -44,6 +45,9 @@ public class ProjectStepConfig {
 	@Qualifier("chunkCountListener")
 	private ChunkListener chunkCountListener;
 
+	@Autowired
+	private TaskExecutor threadPoolTaskExecutor;
+
 	@Bean
 	public MongoItemReader<DBObject> projectMongoItemReader() {
 		MongoItemReader<DBObject> project = MigrationUtils.getMongoItemReader(mongoTemplate, "project");
@@ -57,6 +61,7 @@ public class ProjectStepConfig {
 				.processor(projectItemProcessor)
 				.writer(projectItemWriter)
 				.listener(chunkCountListener)
+				.taskExecutor(threadPoolTaskExecutor)
 				.build();
 	}
 
