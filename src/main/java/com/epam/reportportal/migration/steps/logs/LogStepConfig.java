@@ -8,12 +8,12 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.partition.support.Partitioner;
 import org.springframework.batch.item.ItemProcessor;
-import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
@@ -24,10 +24,10 @@ import java.util.List;
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
+@Configuration
 public class LogStepConfig {
 
 	private static final int CHUNK_SIZE = 5_000;
-
 
 	@Value("${rp.launch.keepFrom}")
 	private String keepFrom;
@@ -42,9 +42,9 @@ public class LogStepConfig {
 	@Qualifier("logProcessor")
 	private ItemProcessor<DBObject, DBObject> logProcessor;
 
-	@Autowired
-	@Qualifier("logWriter")
-	private ItemWriter<DBObject> logWriter;
+	//	@Autowired
+	//	@Qualifier("logWriter")
+	//	private ItemWriter<DBObject> logWriter;
 
 	@Autowired
 	@Qualifier("chunkCountListener")
@@ -57,7 +57,7 @@ public class LogStepConfig {
 	private TaskExecutor threadPoolTaskExecutor;
 
 	@Bean(name = "migrateLogStep")
-	public Step migrateLaunchStep() {
+	public Step migrateLogStep() {
 		return stepBuilderFactory.get("log")
 				.partitioner("slaveLogStep", logPartitioner)
 				.gridSize(12)
@@ -71,7 +71,7 @@ public class LogStepConfig {
 	public Step slaveLogStep() {
 		return stepBuilderFactory.get("slaveLaunchStep").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(logItemReader(null, null))
 				.processor(logProcessor)
-				.writer(logWriter)
+				.writer(System.out::println)
 				.build();
 	}
 

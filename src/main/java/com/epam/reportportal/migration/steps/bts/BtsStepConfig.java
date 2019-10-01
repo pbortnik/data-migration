@@ -1,5 +1,6 @@
 package com.epam.reportportal.migration.steps.bts;
 
+import com.epam.reportportal.migration.steps.utils.CacheableDataService;
 import com.epam.reportportal.migration.steps.utils.MigrationUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -22,8 +23,6 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import static com.epam.reportportal.migration.steps.utils.MigrationUtils.SELECT_PROJECT_ID;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
@@ -51,6 +50,9 @@ public class BtsStepConfig {
 	@Qualifier("chunkCountListener")
 	private ChunkListener chunkCountListener;
 
+	@Autowired
+	private CacheableDataService cacheableDataService;
+
 	@Bean
 	public Map<String, Long> btsIdMapping() {
 		Map<String, Long> mapping = new HashMap<>(2);
@@ -73,36 +75,32 @@ public class BtsStepConfig {
 	@Bean
 	public ItemProcessor<DBObject, DBObject> btsItemProcessor() {
 		return item -> {
-			try {
-				Long projectId = jdbcTemplate.queryForObject(SELECT_PROJECT_ID,
-						Collections.singletonMap("name", item.get("projectRef")),
-						Long.class
-				);
 
-				item.put("id", item.get("_id").toString());
-				item.removeField("_id");
-				item.removeField("_class");
-
-				item.put("authType", item.get("externalSystemAuth"));
-				item.removeField("externalSystemAuth");
-
-				item.put("oauthAccessKey", item.get("accessKey"));
-				item.removeField("accessKey");
-
-				item.put("defectFormFields", item.get("fields"));
-				item.removeField("fields");
-
-				BasicDBObject params = new BasicDBObject("params", item);
-				return new BasicDBObject("params", params).append("projectId", projectId)
-						.append("integrationId", btsIdMapping().get(((String) item.get("externalSystemType")).toLowerCase()))
-						.append("username", item.get("username"))
-
-						.append("project", ((String) item.get("project")).toLowerCase());
-
-			} catch (EmptyResultDataAccessException e) {
-				LOGGER.debug(String.format("Project with name '%s' not found. Bts  is ignored", item.get("projectRef")));
+			Long projectId = cacheableDataService.retrieveProjectId((String) item.get("projectRef"));
+			if (projectId == null) {
 				return null;
 			}
+
+			item.put("id", item.get("_id").toString());
+			item.removeField("_id");
+			item.removeField("_class");
+
+			item.put("authType", item.get("externalSystemAuth"));
+			item.removeField("externalSystemAuth");
+
+			item.put("oauthAccessKey", item.get("accessKey"));
+			item.removeField("accessKey");
+
+			item.put("defectFormFields", item.get("fields"));
+			item.removeField("fields");
+
+			BasicDBObject params = new BasicDBObject("params", item);
+			return new BasicDBObject("params", params).append("projectId", projectId)
+					.append("integrationId", btsIdMapping().get(((String) item.get("externalSystemType")).toLowerCase()))
+					.append("username", item.get("username"))
+
+					.append("project", ((String) item.get("project")).toLowerCase());
+
 		};
 	}
 

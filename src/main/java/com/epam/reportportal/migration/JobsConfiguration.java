@@ -47,11 +47,15 @@ public class JobsConfiguration {
 	private List<Step> levelItemsFlow;
 
 	@Autowired
+	@Qualifier("migrateLogStep")
+	private Step migrateLogStep;
+
+	@Autowired
 	private MigrationJobExecutionListener migrationJobExecutionListener;
 
 	@Bean
 	public Job job() {
-		SimpleJobBuilder job = jobBuilderFactory.get("migartionJob")
+		SimpleJobBuilder job = jobBuilderFactory.get("migrationJob")
 				.listener(migrationJobExecutionListener)
 				.start(migrateUserStep)
 				.next(migrateProjectsStep)
@@ -61,6 +65,7 @@ public class JobsConfiguration {
 		for (Step s : levelItemsFlow) {
 			job = job.next(s);
 		}
+		job.next(migrateLogStep);
 		return job.build();
 	}
 

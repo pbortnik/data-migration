@@ -1,19 +1,18 @@
 package com.epam.reportportal.migration.steps.logs;
 
-import com.github.benmanes.caffeine.cache.Cache;
+import com.epam.reportportal.migration.steps.utils.CacheableDataService;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.gridfs.GridFSDBFile;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.RowCallbackHandler;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.gridfs.GridFsOperations;
 import org.springframework.stereotype.Component;
-
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Collections;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
@@ -23,33 +22,35 @@ public class LogProcessor implements ItemProcessor<DBObject, DBObject> {
 
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
-	public static final String SELECT_ITEM = "SELECT item_id, launch_id FROM test_item WHERE test_item.uuid = :uid";
+	@Autowired
+	private GridFsOperations gridFs;
 
 	@Autowired
-	private Cache<String, Long> idsCache;
-
-	@Autowired
-	private NamedParameterJdbcTemplate jdbcTemplate;
+	private CacheableDataService cacheableDataService;
 
 	@Override
 	public DBObject process(DBObject log) {
-		String testUuid = (String) log.get("testItemRef");
-		Long testId = idsCache.getIfPresent(testUuid);
-		if (testId == null) {
-			try {
-				jdbcTemplate.query(SELECT_ITEM, Collections.singletonMap("uuid", testUuid), new RowCallbackHandler() {
-					@Override
-					public void processRow(ResultSet rs) throws SQLException {
-						log.put("itemId", rs.getLong("item_id"));
-						log.put("launchId", rs.getLong("launch_id"));
-					}
-				});
-			} catch (EmptyResultDataAccessException e) {
-				LOGGER.debug(String.format("TestItem with uuid '%s' not found. Log is ignored.", testUuid));
-				return null;
-			}
+		if (retrieveIds(log) == null) {
+			return null;
 		}
-		log.put("itemId", testId);
+		retrieveBinaryContent(log);
+		return log;
+	}
+
+	private void retrieveBinaryContent(DBObject log) {
+		BasicDBObject binaryContent = (BasicDBObject) log.get("binary_content");
+		if (binaryContent != null) {
+			GridFSDBFile file = gridFs.findOne(Query.query(Criteria.where("_id").is(new ObjectId((String) binaryContent.get("id")))));
+			log.put("file", file);
+		}
+	}
+
+	private DBObject retrieveIds(DBObject log) {
+		DBObject ids = cacheableDataService.retrieveIds((String) log.get("testItemRef"));
+		if (ids == null) {
+			return null;
+		}
+		log.putAll(ids);
 		return log;
 	}
 }

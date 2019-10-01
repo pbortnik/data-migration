@@ -22,6 +22,18 @@ rp:
     user: rpuser
     pass: rppass
 
+  binarystore:
+    path: /data/storage
+    master:
+      host: seaweed-master
+      port: 9333
+    minio:
+      endpoint: http://play.min.io
+      accessKey: Q3AM3UQ867SPQQA43P2F
+      secretKey: zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG
+    # could be one of [seaweed, filesystem, minio]
+    type: filesystem
+
   ##keep launches from date in ISO_LOCAL_DATE (yyyy-MM-dd)
   launch:
     keepFrom: 2019-03-30

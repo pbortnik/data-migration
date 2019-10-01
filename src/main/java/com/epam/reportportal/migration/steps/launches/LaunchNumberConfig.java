@@ -1,5 +1,6 @@
 package com.epam.reportportal.migration.steps.launches;
 
+import com.epam.reportportal.migration.steps.utils.CacheableDataService;
 import com.epam.reportportal.migration.steps.utils.MigrationUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -16,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -25,7 +25,6 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import java.util.Collections;
 import java.util.Map;
 
-import static com.epam.reportportal.migration.steps.utils.MigrationUtils.SELECT_PROJECT_ID;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -56,6 +55,9 @@ public class LaunchNumberConfig {
 
 	@Autowired
 	private TaskExecutor threadPoolTaskExecutor;
+
+	@Autowired
+	private CacheableDataService cacheableDataService;
 
 	@Bean(name = "migrateLaunchNumberStep")
 	public Step migrateLaunchNumberStep() {
@@ -114,14 +116,11 @@ public class LaunchNumberConfig {
 	private void updateDbObject(DBObject item, Map.Entry project) {
 		if (project != null) {
 			String projectName = (String) project.getKey();
-			try {
-				Long projectId = jdbcTemplate.queryForObject(SELECT_PROJECT_ID, Collections.singletonMap("name", projectName), Long.class);
+			Long projectId = cacheableDataService.retrieveProjectId(projectName);
+			if (projectId != null) {
 				DBObject projectIds = (DBObject) item.get("projectIds");
 				projectIds.put(String.valueOf(projectId), project.getValue());
-			} catch (EmptyResultDataAccessException e) {
-				LOGGER.debug(String.format("Project with name '%s' not found", projectName));
 			}
 		}
 	}
-
 }

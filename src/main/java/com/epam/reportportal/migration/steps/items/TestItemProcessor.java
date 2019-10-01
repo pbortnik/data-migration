@@ -1,5 +1,6 @@
 package com.epam.reportportal.migration.steps.items;
 
+import com.epam.reportportal.migration.steps.utils.CacheableDataService;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
@@ -19,8 +20,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static com.epam.reportportal.migration.steps.utils.MigrationUtils.SELECT_ITEM_ID;
-
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
@@ -29,8 +28,6 @@ import static com.epam.reportportal.migration.steps.utils.MigrationUtils.SELECT_
 public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
-
-	private static final String SELECT_LAUNCH_ID = "SELECT id FROM launch WHERE launch.uuid = :uid";
 
 	private static final String SELECT_ISSUE_TYPE_ID = "SELECT id FROM issue_type WHERE issue_type.locator = :loc";
 
@@ -47,7 +44,7 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 	private RowMapper<Map> btsRowMapper;
 
 	@Autowired
-	private Cache<String, Long> idsCache;
+	private CacheableDataService cacheableDataService;
 
 	@Override
 	public DBObject process(DBObject item) {
@@ -61,19 +58,10 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 	}
 
 	private DBObject retrieveLaunch(DBObject item) {
-		String launchRef = (String) item.get("launchRef");
-		if (launchRef == null) {
-			return null;
-		}
-		Long launchId = idsCache.getIfPresent(launchRef);
+		Long launchId = cacheableDataService.retrieveLaunchId((String) item.get("launchRef"));
 		if (launchId == null) {
-			try {
-				launchId = jdbcTemplate.queryForObject(SELECT_LAUNCH_ID, Collections.singletonMap("uid", launchRef), Long.class);
-				idsCache.put(launchRef, launchId);
-			} catch (EmptyResultDataAccessException e) {
-				LOGGER.debug(String.format("Launch with uuid '%s' not found. It is ignored.", launchRef));
-				return null;
-			}
+			LOGGER.debug("Test item with missed launch is ignored");
+			return null;
 		}
 		item.put("launchId", launchId);
 		return item;
@@ -84,16 +72,7 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 		if (parent == null) {
 			return item;
 		}
-		Long parentId = idsCache.getIfPresent(parent);
-		if (parentId == null) {
-			try {
-				parentId = jdbcTemplate.queryForObject(SELECT_ITEM_ID, Collections.singletonMap("uid", parent), Long.class);
-				idsCache.put(parent, parentId);
-			} catch (EmptyResultDataAccessException e) {
-				LOGGER.debug(String.format("Parent with uuid '%s' not found. It is ignored.", parent));
-				return null;
-			}
-		}
+		Long parentId = cacheableDataService.retrieveItemId(parent);
 		item.put("parentId", parentId);
 		return item;
 	}
@@ -139,10 +118,7 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 		String pathStr;
 		try {
 			pathStr = path.stream().map(mongoId -> {
-				Long id = idsCache.getIfPresent(mongoId);
-				if (id == null) {
-					id = jdbcTemplate.queryForObject(SELECT_ITEM_ID, Collections.singletonMap("uid", mongoId), Long.class);
-				}
+				Long id = cacheableDataService.retrieveItemId((String) mongoId);
 				return String.valueOf(id);
 			}).collect(Collectors.joining("."));
 			item.put("pathIds", pathStr);

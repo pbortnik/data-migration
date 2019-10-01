@@ -1,5 +1,6 @@
 package com.epam.reportportal.migration.steps.launches;
 
+import com.epam.reportportal.migration.steps.utils.CacheableDataService;
 import com.mongodb.DBObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 
-import static com.epam.reportportal.migration.steps.utils.MigrationUtils.SELECT_PROJECT_ID;
 import static com.epam.reportportal.migration.steps.utils.MigrationUtils.SELECT_USER_ID;
 
 /**
@@ -27,6 +27,9 @@ public class LaunchItemProcessor implements ItemProcessor<DBObject, DBObject> {
 	@Autowired
 	private NamedParameterJdbcTemplate jdbcTemplate;
 
+	@Autowired
+	private CacheableDataService cacheableDataService;
+
 	@Override
 	public DBObject process(DBObject item) {
 		try {
@@ -35,20 +38,15 @@ public class LaunchItemProcessor implements ItemProcessor<DBObject, DBObject> {
 		} catch (EmptyResultDataAccessException e) {
 			LOGGER.debug(String.format("User with name '%s' not found", item.get("userRef")));
 		}
-		try {
-			Long projectId = jdbcTemplate.queryForObject(SELECT_PROJECT_ID,
-					Collections.singletonMap("name", item.get("projectRef")),
-					Long.class
-			);
-			item.put("projectId", projectId);
-		} catch (EmptyResultDataAccessException e) {
-			LOGGER.debug(String.format(
-					"Project with name '%s' not found. Launch with id '%s' is ignored",
+		Long projectId = cacheableDataService.retrieveProjectId((String) item.get("projectRef"));
+		if (projectId == null) {
+			LOGGER.debug(String.format("Project %s is missed. Skipping launch with id %s.",
 					item.get("projectRef"),
-					item.get("_id")
+					item.get("_id").toString()
 			));
 			return null;
 		}
+		item.put("projectId", projectId);
 		return item;
 	}
 }
