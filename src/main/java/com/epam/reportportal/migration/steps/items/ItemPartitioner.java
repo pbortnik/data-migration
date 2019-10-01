@@ -10,13 +10,14 @@ import org.springframework.data.mongodb.core.query.Query;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
+
+import static com.epam.reportportal.migration.steps.utils.DatePartitioner.prepareExecutionContext;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
-public class ItemDatePartitioner implements Partitioner {
+public class ItemPartitioner implements Partitioner {
 
 	private MongoOperations mongoOperations;
 
@@ -38,27 +39,8 @@ public class ItemDatePartitioner implements Partitioner {
 				.with(new Sort(Sort.Direction.DESC, "start_time"))
 				.limit(1), "testItem", dbObject -> maxDate.setTime(((Date) dbObject.get("start_time")).getTime()));
 
-		long targetSize = (maxDate.getTime() - minDate.getTime()) / gridSize + 1;
-		Map<String, ExecutionContext> result = new HashMap<>();
-		int number = 0;
-		long start = minDate.getTime();
-		long end = start + targetSize - 1;
-
-		while (start <= maxDate.getTime()) {
-			ExecutionContext value = new ExecutionContext();
-			result.put("partition" + number, value);
-
-			if (end >= maxDate.getTime()) {
-				end = maxDate.getTime();
-			}
-			value.putLong("minValue", start);
-			value.putLong("maxValue", end);
-			value.putInt("pathLevel", pathLevel);
-			start += targetSize;
-			end += targetSize;
-			number++;
-		}
-
+		Map<String, ExecutionContext> result = prepareExecutionContext(gridSize, minDate, maxDate);
+		result.values().stream().forEach(context -> context.putInt("pathLevel", pathLevel));
 		return result;
 	}
 

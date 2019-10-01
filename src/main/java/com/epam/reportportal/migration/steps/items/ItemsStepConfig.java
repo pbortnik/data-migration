@@ -99,8 +99,8 @@ public class ItemsStepConfig {
 
 	@Bean
 	@Scope(BeanDefinition.SCOPE_PROTOTYPE)
-	public ItemDatePartitioner partitioner(Integer i) {
-		ItemDatePartitioner partitioner = new ItemDatePartitioner();
+	public ItemPartitioner partitioner(Integer i) {
+		ItemPartitioner partitioner = new ItemPartitioner();
 		partitioner.setKeepFrom(keepFrom);
 		partitioner.setMongoOperations(mongoTemplate);
 		partitioner.setPathLevel(i);

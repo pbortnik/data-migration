@@ -19,6 +19,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static com.epam.reportportal.migration.steps.utils.MigrationUtils.SELECT_ITEM_ID;
+
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
@@ -29,8 +31,6 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
 	private static final String SELECT_LAUNCH_ID = "SELECT id FROM launch WHERE launch.uuid = :uid";
-
-	private static final String SELECT_ITEM_ID = "SELECT item_id FROM test_item WHERE test_item.uuid = :uid";
 
 	private static final String SELECT_ISSUE_TYPE_ID = "SELECT id FROM issue_type WHERE issue_type.locator = :loc";
 

@@ -21,6 +21,8 @@ public class MigrationUtils {
 
 	public static final String SELECT_PROJECT_ID = "SELECT id FROM project WHERE project.name = :name";
 
+	public static final String SELECT_ITEM_ID = "SELECT item_id FROM test_item WHERE test_item.uuid = :uid";
+
 	public static Timestamp toUtc(Date date) {
 		if (date == null) {
 			return null;

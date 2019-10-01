@@ -1,4 +1,4 @@
-package com.epam.reportportal.migration.steps.launches;
+package com.epam.reportportal.migration.steps.logs;
 
 import com.epam.reportportal.migration.steps.utils.MigrationUtils;
 import com.mongodb.DBObject;
@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
@@ -25,10 +24,10 @@ import java.util.List;
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
-@Configuration
-public class LaunchStepConfig {
+public class LogStepConfig {
 
 	private static final int CHUNK_SIZE = 5_000;
+
 
 	@Value("${rp.launch.keepFrom}")
 	private String keepFrom;
@@ -40,54 +39,53 @@ public class LaunchStepConfig {
 	private StepBuilderFactory stepBuilderFactory;
 
 	@Autowired
-	@Qualifier("launchItemProcessor")
-	private ItemProcessor<DBObject, DBObject> launchItemProcessor;
+	@Qualifier("logProcessor")
+	private ItemProcessor<DBObject, DBObject> logProcessor;
 
 	@Autowired
-	@Qualifier("launchItemWriter")
-	private ItemWriter<DBObject> launchItemWriter;
+	@Qualifier("logWriter")
+	private ItemWriter<DBObject> logWriter;
 
 	@Autowired
 	@Qualifier("chunkCountListener")
 	private ChunkListener chunkCountListener;
 
 	@Autowired
-	@Qualifier("launchPartitioner")
-	private Partitioner datePartitioning;
+	private Partitioner logPartitioner;
 
 	@Autowired
 	private TaskExecutor threadPoolTaskExecutor;
 
-	@Bean
-	@StepScope
-	public MongoItemReader<DBObject> launchItemReader(@Value("#{stepExecutionContext[minValue]}") Long minTime,
-			@Value("#{stepExecutionContext[maxValue]}") Long maxTime) {
-		MongoItemReader<DBObject> itemReader = MigrationUtils.getMongoItemReader(mongoTemplate, "launch");
-		itemReader.setQuery("{ $and : [ { 'start_time': { $gte : ?0 }}, { 'start_time': { $lte :  ?1 }} ]}");
-		List<Object> list = new LinkedList<>();
-		list.add(new Date(minTime));
-		list.add(new Date(maxTime));
-		itemReader.setParameterValues(list);
-		itemReader.setPageSize(CHUNK_SIZE);
-		return itemReader;
-	}
-
-	@Bean(name = "migrateLaunchStep")
+	@Bean(name = "migrateLogStep")
 	public Step migrateLaunchStep() {
-		return stepBuilderFactory.get("launch")
-				.partitioner("slaveLaunchStep", datePartitioning)
+		return stepBuilderFactory.get("log")
+				.partitioner("slaveLogStep", logPartitioner)
 				.gridSize(12)
-				.step(slaveLaunchStep())
+				.step(slaveLogStep())
 				.taskExecutor(threadPoolTaskExecutor)
 				.listener(chunkCountListener)
 				.build();
 	}
 
 	@Bean
-	public Step slaveLaunchStep() {
-		return stepBuilderFactory.get("slaveLaunchStep").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(launchItemReader(null, null))
-				.processor(launchItemProcessor)
-				.writer(launchItemWriter)
+	public Step slaveLogStep() {
+		return stepBuilderFactory.get("slaveLaunchStep").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(logItemReader(null, null))
+				.processor(logProcessor)
+				.writer(logWriter)
 				.build();
+	}
+
+	@Bean
+	@StepScope
+	public MongoItemReader<DBObject> logItemReader(@Value("#{stepExecutionContext[minValue]}") Long minTime,
+			@Value("#{stepExecutionContext[maxValue]}") Long maxTime) {
+		MongoItemReader<DBObject> itemReader = MigrationUtils.getMongoItemReader(mongoTemplate, "log");
+		itemReader.setQuery("{ $and : [ { 'logTime': { $gte : ?0 }}, { 'logTime': { $lte :  ?1 }} ]}");
+		List<Object> list = new LinkedList<>();
+		list.add(new Date(minTime));
+		list.add(new Date(maxTime));
+		itemReader.setParameterValues(list);
+		itemReader.setPageSize(CHUNK_SIZE);
+		return itemReader;
 	}
 }
