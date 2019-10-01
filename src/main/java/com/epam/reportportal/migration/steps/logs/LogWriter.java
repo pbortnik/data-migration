@@ -29,8 +29,8 @@ public class LogWriter implements ItemWriter<DBObject> {
 			+ "VALUES (:uid, :lt, :lmsg, :item, :lnch, :lm, :ll)";
 
 	private static final String INSERT_LOG_WITH_ATTACH =
-			"INSERT INTO log (uuid, log_time, log_message, item_id, launch_id, last_modified, log_level, attachment_id) "
-					+ "VALUES (:uid, :lt, :lmsg, :item, :lnch, :lm, :ll, :attachId)";
+			"INSERT INTO log (uuid, log_time, log_message, item_id, last_modified, log_level, attachment_id) "
+					+ "VALUES (:uid, :lt, :lmsg, :item, :lm, :ll, :attachId)";
 
 	private static final String INSERT_ATTACH =
 			"INSERT INTO attachment (file_id, thumbnail_id, content_type, project_id, launch_id, item_id) "
@@ -76,7 +76,6 @@ public class LogWriter implements ItemWriter<DBObject> {
 		parameterSource.addValue("lt", toUtc((Date) log.get("logTime")));
 		parameterSource.addValue("lmsg", log.get("logMsg"));
 		parameterSource.addValue("item", log.get("itemId"));
-		parameterSource.addValue("lnch", log.get("launchId"));
 		parameterSource.addValue("lm", toUtc((Date) log.get("last_modified")));
 		parameterSource.addValue("ll", ((DBObject) log.get("level")).get("log_level"));
 		return parameterSource;
