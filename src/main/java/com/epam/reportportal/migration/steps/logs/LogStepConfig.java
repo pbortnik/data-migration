@@ -8,6 +8,7 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.partition.support.Partitioner;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -42,9 +43,9 @@ public class LogStepConfig {
 	@Qualifier("logProcessor")
 	private ItemProcessor<DBObject, DBObject> logProcessor;
 
-	//	@Autowired
-	//	@Qualifier("logWriter")
-	//	private ItemWriter<DBObject> logWriter;
+	@Autowired
+	@Qualifier("logWriter")
+	private ItemWriter<DBObject> logWriter;
 
 	@Autowired
 	@Qualifier("chunkCountListener")
@@ -71,7 +72,7 @@ public class LogStepConfig {
 	public Step slaveLogStep() {
 		return stepBuilderFactory.get("slaveLaunchStep").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(logItemReader(null, null))
 				.processor(logProcessor)
-				.writer(System.out::println)
+				.writer(logWriter)
 				.build();
 	}
 

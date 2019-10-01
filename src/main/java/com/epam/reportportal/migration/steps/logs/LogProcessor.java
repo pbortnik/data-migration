@@ -7,6 +7,7 @@ import com.mongodb.gridfs.GridFSDBFile;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Component;
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
 @Component
+@StepScope
 public class LogProcessor implements ItemProcessor<DBObject, DBObject> {
 
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
@@ -33,16 +35,24 @@ public class LogProcessor implements ItemProcessor<DBObject, DBObject> {
 		if (retrieveIds(log) == null) {
 			return null;
 		}
-		retrieveBinaryContent(log);
+		if (retrieveBinaryContent(log) == null) {
+			return null;
+		}
 		return log;
 	}
 
-	private void retrieveBinaryContent(DBObject log) {
+	private DBObject retrieveBinaryContent(DBObject log) {
 		BasicDBObject binaryContent = (BasicDBObject) log.get("binary_content");
 		if (binaryContent != null) {
 			GridFSDBFile file = gridFs.findOne(Query.query(Criteria.where("_id").is(new ObjectId((String) binaryContent.get("id")))));
+			Long projectId = cacheableDataService.retrieveProjectId((String) file.getMetaData().get("project"));
+			if (projectId == null) {
+				return null;
+			}
+			file.put("projectId", projectId);
 			log.put("file", file);
 		}
+		return log;
 	}
 
 	private DBObject retrieveIds(DBObject log) {

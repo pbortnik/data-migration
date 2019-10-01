@@ -10,12 +10,18 @@ sourceCompatibility = 1.8
 repositories {
     mavenLocal()
     mavenCentral()
+    maven { url "http://dl.bintray.com/epam/reportportal" }
+
 }
 
 
 dependencies {
     implementation 'org.springframework.data:spring-data-mongodb:1.10.9.RELEASE'
     implementation('org.springframework.boot:spring-boot-starter-batch:2.1.7.RELEASE')
+    implementation 'com.epam.reportportal:commons:5.0.0-BETA-2'
+    implementation 'io.minio:minio:6.0.10'
+    implementation 'org.lokra.seaweedfs:seaweedfs-client:0.7.3.RELEASE'
+    implementation 'org.apache.commons:commons-lang3:3.9'
 
 
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.9.9'
