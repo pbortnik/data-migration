@@ -70,7 +70,7 @@ public class LogStepConfig {
 
 	@Bean
 	public Step slaveLogStep() {
-		return stepBuilderFactory.get("slaveLaunchStep").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(logItemReader(null, null))
+		return stepBuilderFactory.get("slaveLogStep").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(logItemReader(null, null))
 				.processor(logProcessor)
 				.writer(logWriter)
 				.build();

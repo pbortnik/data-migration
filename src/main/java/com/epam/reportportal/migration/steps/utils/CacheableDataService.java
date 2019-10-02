@@ -96,6 +96,8 @@ public class CacheableDataService {
 					if (rs.next()) {
 						dbObject.put("itemId", rs.getLong("item_id"));
 						dbObject.put("launchId", rs.getLong("launch_id"));
+					} else {
+						throw new EmptyResultDataAccessException(1);
 					}
 					return dbObject;
 				});

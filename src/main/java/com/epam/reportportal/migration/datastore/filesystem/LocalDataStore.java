@@ -35,8 +35,11 @@ public class LocalDataStore implements DataStore {
 
 	private final String storageRootPath;
 
-	public LocalDataStore(String storageRootPath) {
+	private final String remoteRootPath;
+
+	public LocalDataStore(String storageRootPath, String remoteRootPath) {
 		this.storageRootPath = storageRootPath;
+		this.remoteRootPath = remoteRootPath;
 	}
 
 	@Override
@@ -55,7 +58,7 @@ public class LocalDataStore implements DataStore {
 
 			Files.copy(inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-			return targetPath.toString();
+			return Paths.get(remoteRootPath, filePath).toString();
 		} catch (IOException e) {
 
 			logger.error("Unable to save log file ", e);

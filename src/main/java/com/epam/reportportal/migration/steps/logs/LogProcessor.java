@@ -49,7 +49,7 @@ public class LogProcessor implements ItemProcessor<DBObject, DBObject> {
 			if (projectId == null) {
 				return null;
 			}
-			file.put("projectId", projectId);
+			log.put("projectId", projectId);
 			log.put("file", file);
 		}
 		return log;

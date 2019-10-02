@@ -16,11 +16,14 @@
 
 package com.epam.reportportal.migration.datastore.binary.impl;
 
+import org.apache.tika.mime.MimeTypeException;
+import org.apache.tika.mime.MimeTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 /**
  * @author <a href="mailto:ihar_kahadouski@epam.com">Ihar Kahadouski</a>
@@ -39,8 +42,22 @@ public class DataStoreUtils {
 		//static only
 	}
 
+	public static Optional<String> resolveExtension(String contentType) {
+		Optional<String> result = Optional.empty();
+		try {
+			result = Optional.of(MimeTypes.getDefaultMimeTypes().forName(contentType).getExtension());
+		} catch (MimeTypeException e) {
+			LOGGER.warn("Cannot resolve file extension from content type '{}'", contentType, e);
+		}
+		return result;
+	}
+
 	public static String buildThumbnailFileName(String commonPath, String fileName) {
 		Path thumbnailTargetPath = Paths.get(commonPath, THUMBNAIL_PREFIX.concat(fileName));
 		return thumbnailTargetPath.toString();
+	}
+
+	public static boolean isImage(String contentType) {
+		return contentType != null && contentType.contains("image");
 	}
 }

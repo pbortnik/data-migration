@@ -1,6 +1,7 @@
 package com.epam.reportportal.migration.steps.logs;
 
 import com.epam.reportportal.migration.datastore.binary.DataStoreService;
+import com.epam.reportportal.migration.datastore.filesystem.FilePathGenerator;
 import com.mongodb.DBObject;
 import com.mongodb.gridfs.GridFSDBFile;
 import org.springframework.batch.item.ItemWriter;
@@ -12,11 +13,15 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Component;
 
+import java.io.InputStream;
+import java.nio.file.Paths;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.epam.reportportal.migration.datastore.binary.impl.DataStoreUtils.buildThumbnailFileName;
+import static com.epam.reportportal.migration.datastore.binary.impl.DataStoreUtils.isImage;
 import static com.epam.reportportal.migration.steps.utils.MigrationUtils.toUtc;
 
 /**
@@ -25,8 +30,8 @@ import static com.epam.reportportal.migration.steps.utils.MigrationUtils.toUtc;
 @Component
 public class LogWriter implements ItemWriter<DBObject> {
 
-	private static final String INSERT_LOG = "INSERT INTO log (uuid, log_time, log_message, item_id, launch_id, last_modified, log_level) "
-			+ "VALUES (:uid, :lt, :lmsg, :item, :lnch, :lm, :ll)";
+	private static final String INSERT_LOG = "INSERT INTO log (uuid, log_time, log_message, item_id, last_modified, log_level) "
+			+ "VALUES (:uid, :lt, :lmsg, :item, :lm, :ll)";
 
 	private static final String INSERT_LOG_WITH_ATTACH =
 			"INSERT INTO log (uuid, log_time, log_message, item_id, last_modified, log_level, attachment_id) "
@@ -43,6 +48,9 @@ public class LogWriter implements ItemWriter<DBObject> {
 	@Autowired
 	private NamedParameterJdbcTemplate jdbcTemplate;
 
+	@Autowired
+	private FilePathGenerator filePathGenerator;
+
 	@Override
 	public void write(List<? extends DBObject> items) {
 
@@ -58,8 +66,14 @@ public class LogWriter implements ItemWriter<DBObject> {
 
 		splitted.get(false).forEach(logWithBinary -> {
 			GridFSDBFile file = (GridFSDBFile) logWithBinary.get("file");
-			String path = dataStoreService.save(file.getFilename(), file.getInputStream());
-			String pathThumbnail = dataStoreService.saveThumbnail(file.getFilename(), file.getInputStream());
+
+			String commonPath = Paths.get(logWithBinary.get("projectId").toString(), filePathGenerator.generate()).toString();
+			String targetPath = Paths.get(commonPath, file.getFilename()).toString();
+
+			String path = dataStoreService.save(targetPath, file.getInputStream());
+
+			String pathThumbnail = createThumbnail(file.getInputStream(), file.getContentType(), file.getFilename(), commonPath);
+
 			Long attachmentId = jdbcTemplate.queryForObject(INSERT_ATTACH,
 					attachSourceProvider(logWithBinary, file, path, pathThumbnail),
 					Long.class
@@ -70,14 +84,27 @@ public class LogWriter implements ItemWriter<DBObject> {
 		});
 	}
 
+	private String createThumbnail(InputStream inputStream, String contentType, String fileName, String commonPath) {
+		String thumbnailId = null;
+		if (isImage(contentType)) {
+			thumbnailId = dataStoreService.saveThumbnail(buildThumbnailFileName(commonPath, fileName), inputStream);
+		}
+		return thumbnailId;
+	}
+
 	private static final ItemSqlParameterSourceProvider<DBObject> LOG_SOURCE_PROVIDER = log -> {
+		DBObject level = (DBObject) log.get("level");
+		int logLevel = 30000;
+		if (level != null) {
+			logLevel = (int) level.get("log_level");
+		}
 		MapSqlParameterSource parameterSource = new MapSqlParameterSource();
 		parameterSource.addValue("uid", log.get("_id").toString());
 		parameterSource.addValue("lt", toUtc((Date) log.get("logTime")));
 		parameterSource.addValue("lmsg", log.get("logMsg"));
 		parameterSource.addValue("item", log.get("itemId"));
 		parameterSource.addValue("lm", toUtc((Date) log.get("last_modified")));
-		parameterSource.addValue("ll", ((DBObject) log.get("level")).get("log_level"));
+		parameterSource.addValue("ll", logLevel);
 		return parameterSource;
 	};
 
@@ -86,7 +113,7 @@ public class LogWriter implements ItemWriter<DBObject> {
 		parameterSource.addValue("fid", filePath);
 		parameterSource.addValue("tid", thumbPath);
 		parameterSource.addValue("ct", binary.getContentType());
-		parameterSource.addValue("pr", binary.get("projectId"));
+		parameterSource.addValue("pr", logFile.get("projectId"));
 		parameterSource.addValue("lnch", logFile.get("launchId"));
 		parameterSource.addValue("item", logFile.get("itemId"));
 		return parameterSource;
