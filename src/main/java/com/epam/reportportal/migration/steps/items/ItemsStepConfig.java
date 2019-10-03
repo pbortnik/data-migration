@@ -133,20 +133,26 @@ public class ItemsStepConfig {
 	}
 
 	private void prepareCollectionForMigration() {
-		long start = System.currentTimeMillis();
-
 		DBObject testItem = mongoTemplate.findOne(new Query().limit(1), DBObject.class, "testItem");
+
 		if (null == testItem.get("pathLevel")) {
 			mongoTemplate.aggregate(Aggregation.newAggregation(
 					context -> new BasicDBObject("$addFields", new BasicDBObject("pathLevel", new BasicDBObject("$size", "$path"))),
 					Aggregation.out("testItem")
 			), "testItem", Object.class);
-			mongoTemplate.indexOps("testItem").ensureIndex(new Index("start_time", Sort.Direction.ASC));
-			mongoTemplate.indexOps("testItem")
-					.ensureIndex(new CompoundIndexDefinition(new BasicDBObject("start_time", 1).append("pathLevel", 1)));
 		}
 
-		System.err.println(System.currentTimeMillis() - start);
+		List<DBObject> indexInfo = mongoTemplate.getCollection("log").getIndexInfo();
+
+		if (indexInfo.stream().noneMatch(it -> ((String) it.get("name")).equalsIgnoreCase("start_time"))) {
+			mongoTemplate.indexOps("testItem").ensureIndex(new Index("start_time", Sort.Direction.ASC).named("start_time"));
+		}
+
+		if (indexInfo.stream().noneMatch(it -> ((String) it.get("name")).equalsIgnoreCase("start_time_path"))) {
+			mongoTemplate.indexOps("testItem")
+					.ensureIndex(new CompoundIndexDefinition(new BasicDBObject("start_time", 1).append("pathLevel", 1)).named(
+							"start_time_path"));
+		}
 
 	}
 

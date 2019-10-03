@@ -39,6 +39,10 @@ rp:
     keepFrom: 2019-03-30
   test:
     keepFrom: 2019-03-30
+  log:
+    keepFrom: 2019-03-30
+  attach:
+    keepFrom: 2019-03-30
   user:
     keepFrom: 2019-03-30
 

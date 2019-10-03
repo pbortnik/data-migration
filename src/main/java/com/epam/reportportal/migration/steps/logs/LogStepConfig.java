@@ -16,7 +16,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.index.Index;
 
 import java.util.Date;
 import java.util.LinkedList;
@@ -30,7 +32,7 @@ public class LogStepConfig {
 
 	private static final int CHUNK_SIZE = 5_000;
 
-	@Value("${rp.launch.keepFrom}")
+	@Value("${rp.log.keepFrom}")
 	private String keepFrom;
 
 	@Autowired
@@ -59,6 +61,7 @@ public class LogStepConfig {
 
 	@Bean(name = "migrateLogStep")
 	public Step migrateLogStep() {
+		prepareCollectionForReading();
 		return stepBuilderFactory.get("log")
 				.partitioner("slaveLogStep", logPartitioner)
 				.gridSize(12)
@@ -88,5 +91,14 @@ public class LogStepConfig {
 		itemReader.setParameterValues(list);
 		itemReader.setPageSize(CHUNK_SIZE);
 		return itemReader;
+	}
+
+	private void prepareCollectionForReading() {
+		if (mongoTemplate.getCollection("log")
+				.getIndexInfo()
+				.stream()
+				.noneMatch(it -> ((String) it.get("name")).equalsIgnoreCase("log_time"))) {
+			mongoTemplate.indexOps("log").ensureIndex(new Index("log_time", Sort.Direction.ASC).named("log_time"));
+		}
 	}
 }
