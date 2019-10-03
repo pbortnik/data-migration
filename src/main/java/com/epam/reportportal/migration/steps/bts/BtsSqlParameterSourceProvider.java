@@ -1,7 +1,6 @@
 package com.epam.reportportal.migration.steps.bts;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.springframework.batch.item.database.ItemSqlParameterSourceProvider;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -18,14 +17,9 @@ public class BtsSqlParameterSourceProvider implements ItemSqlParameterSourceProv
 
 	@Override
 	public SqlParameterSource createSqlParameterSource(DBObject item) {
-		String params;
-		DBObject paramsObject = (DBObject) item.get("params");
-		try {
-			params = new ObjectMapper().writeValueAsString(paramsObject);
-			params = params.replaceAll("isRequired", "required");
-		} catch (JsonProcessingException e) {
-			throw new RuntimeException();
-		}
+		BasicDBObject paramsObject = (BasicDBObject) item.get("params");
+		String params = paramsObject.toJson();
+		params = params.replaceAll("isRequired", "required");
 		MapSqlParameterSource res = new MapSqlParameterSource();
 		res.addValue("pr", item.get("projectId"));
 		res.addValue("tp", item.get("integrationId"));

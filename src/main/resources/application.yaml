@@ -37,6 +37,9 @@ rp:
   ##keep launches from date in ISO_LOCAL_DATE (yyyy-MM-dd)
   launch:
     keepFrom: 2019-03-30
+  user:
+    keepFrom: 2019-03-30
+  project:
 
 logging:
   level:

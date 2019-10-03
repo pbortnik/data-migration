@@ -23,14 +23,6 @@ dependencies {
     implementation 'org.lokra.seaweedfs:seaweedfs-client:0.7.3.RELEASE'
     implementation 'org.apache.commons:commons-lang3:3.9'
 
-    compile 'org.apache.tika:tika-core:1.22'
-    compile 'org.apache.tika:tika-parsers:1.22'
-
-
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.9.9'
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.9.9.3'
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.9.9'
-
     compile group: 'com.github.ben-manes.caffeine', name: 'caffeine', version: '2.8.0'
 
     implementation('org.springframework.boot:spring-boot-starter-jdbc:2.1.7.RELEASE')

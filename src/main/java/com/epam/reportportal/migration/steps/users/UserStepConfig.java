@@ -8,16 +8,18 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.data.MongoItemReader;
-import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
-import javax.sql.DataSource;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.Collections;
+import java.util.Date;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
@@ -30,14 +32,14 @@ public class UserStepConfig {
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
 
+	@Value("${rp.user.keepFrom}")
+	private String keepFrom;
+
 	@Autowired
 	private MongoTemplate mongoTemplate;
 
 	@Autowired
-	private DataSource dataSource;
-
-	@Autowired
-	private NamedParameterJdbcTemplate jdbcTemplate;
+	private ItemWriter<DBObject> userWriter;
 
 	@Autowired
 	@Qualifier("chunkCountListener")
@@ -48,7 +50,10 @@ public class UserStepConfig {
 
 	@Bean
 	public MongoItemReader<DBObject> userMongoItemReader() {
+		Date fromDate = Date.from(LocalDate.parse(keepFrom).atStartOfDay(ZoneOffset.UTC).toInstant());
 		MongoItemReader<DBObject> user = MigrationUtils.getMongoItemReader(mongoTemplate, "user");
+		user.setQuery("{'metaInfo.lastLogin' : {$gte : ?0)}})");
+		user.setParameterValues(Collections.singletonList(fromDate));
 		user.setPageSize(CHUNK_SIZE);
 		return user;
 	}
@@ -59,20 +64,10 @@ public class UserStepConfig {
 	}
 
 	@Bean
-	public ItemWriter<DBObject> userItemWriter() {
-		JdbcBatchItemWriter<DBObject> writer = new JdbcBatchItemWriter<>();
-		writer.setDataSource(dataSource);
-		writer.setJdbcTemplate(jdbcTemplate);
-		writer.setSql(UserPreparedStatementSetter.QUERY_INSERT_USER);
-		writer.setItemPreparedStatementSetter(new UserPreparedStatementSetter());
-		return writer;
-	}
-
-	@Bean
 	public Step migrateUsersStep() {
 		return stepBuilderFactory.get("user").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(userMongoItemReader())
 				.processor(userItemProcessor())
-				.writer(userItemWriter())
+				.writer(userWriter)
 				.listener(chunkCountListener)
 				.taskExecutor(threadPoolTaskExecutor)
 				.build();

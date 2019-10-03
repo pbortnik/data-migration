@@ -34,9 +34,9 @@ public class DataStoreUtils {
 
 	private static final String THUMBNAIL_PREFIX = "thumbnail-";
 
-	static final String ROOT_USER_PHOTO_DIR = "users";
+	public static final String ROOT_USER_PHOTO_DIR = "users";
 
-	static final String ATTACHMENT_CONTENT_TYPE = "attachmentContentType";
+	public static final String ATTACHMENT_CONTENT_TYPE = "attachmentContentType";
 
 	private DataStoreUtils() {
 		//static only
