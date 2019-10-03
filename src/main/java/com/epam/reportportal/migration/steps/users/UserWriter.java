@@ -17,6 +17,7 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Paths;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -62,14 +63,41 @@ public class UserWriter implements ItemWriter<DBObject> {
 	}
 
 	private SqlParameterSource userParamSource(DBObject user) {
-		BasicDBObject metaInfo = (BasicDBObject) user.get("metaInfo");
+		String metadata = getMetadata(null, (BasicDBObject) user.get("metaInfo"));
+		return getCommonSqlParameterSource(user, metadata);
+	}
+
+	private void saveUserAndPhoto(DBObject user) {
+		GridFSDBFile file = gridFsOperations.findOne(Query.query(Criteria.where("_id").is(user.get("photoId"))));
+		String attach = dataStoreService.save(Paths.get(ROOT_USER_PHOTO_DIR, user.get("_id").toString()).toString(), file.getInputStream());
+		String attachThumb = dataStoreService.saveThumbnail(DataStoreUtils.buildThumbnailFileName(ROOT_USER_PHOTO_DIR,
+				user.get("_id").toString()
+		), file.getInputStream());
+
+		String metadata = getMetadata(file.getContentType(), (BasicDBObject) user.get("metaInfo"));
+		MapSqlParameterSource ps = getCommonSqlParameterSource(user, metadata);
+		ps.addValue("attach", attach);
+		ps.addValue("attach_thumb", attachThumb);
+		jdbcTemplate.update(INSERT_USER_ATTACH, ps);
+	}
+
+	private String getMetadata(String contentType, BasicDBObject metaInfo) {
 		String metadata = "{\"metadata\": %s}";
 		if (metaInfo != null) {
-			metadata = String.format(metadata, metaInfo.toJson().replaceAll("lastLogin", "last_login"));
+			metaInfo.put("last_login", ((Date) metaInfo.get("lastLogin")).getTime());
+			metaInfo.put("synchronizationDate", ((Date) metaInfo.get("synchronizationDate")).getTime());
+			metaInfo.remove("lastLogin");
+			if (contentType != null) {
+				metaInfo.put(ATTACHMENT_CONTENT_TYPE, contentType);
+			}
+			metadata = String.format(metadata, metaInfo.toJson());
 		} else {
 			metadata = String.format(metadata, "{}");
 		}
+		return metadata;
+	}
 
+	private MapSqlParameterSource getCommonSqlParameterSource(DBObject user, String metadata) {
 		MapSqlParameterSource ps = new MapSqlParameterSource();
 		ps.addValue("lg", user.get("_id").toString());
 		ps.addValue("pass", user.get("password"));
@@ -80,36 +108,5 @@ public class UserWriter implements ItemWriter<DBObject> {
 		ps.addValue("fn", Optional.ofNullable((String) user.get("fullName")).orElse(""));
 		ps.addValue("md", metadata);
 		return ps;
-	}
-
-	private void saveUserAndPhoto(DBObject user) {
-		GridFSDBFile file = gridFsOperations.findOne(Query.query(Criteria.where("_id").is(user.get("photoId"))));
-		String attach = dataStoreService.save(Paths.get(ROOT_USER_PHOTO_DIR, user.get("_id").toString()).toString(), file.getInputStream());
-		String attachThumb = dataStoreService.saveThumbnail(DataStoreUtils.buildThumbnailFileName(ROOT_USER_PHOTO_DIR,
-				user.get("_id").toString()
-		), file.getInputStream());
-
-		BasicDBObject metaInfo = (BasicDBObject) user.get("metaInfo");
-		String metadata = "{\"metadata\": %s}";
-		if (metaInfo != null) {
-			metaInfo.put(ATTACHMENT_CONTENT_TYPE, file.getContentType());
-			metadata = String.format(metadata, metaInfo.toJson().replaceAll("lastLogin", "last_login"));
-		} else {
-			metadata = String.format(metadata, "{}");
-		}
-
-		MapSqlParameterSource ps = new MapSqlParameterSource();
-		ps.addValue("lg", user.get("_id").toString());
-		ps.addValue("attach", attach);
-		ps.addValue("attach_thumb", attachThumb);
-		ps.addValue("pass", user.get("password"));
-		ps.addValue("em", user.get("email"));
-		ps.addValue("rl", user.get("role"));
-		ps.addValue("tp", user.get("type"));
-		ps.addValue("exp", user.get("isExpired"));
-		ps.addValue("fn", Optional.ofNullable((String) user.get("fullName")).orElse(""));
-		ps.addValue("md", metadata);
-
-		jdbcTemplate.update(INSERT_USER_ATTACH, ps);
 	}
 }
