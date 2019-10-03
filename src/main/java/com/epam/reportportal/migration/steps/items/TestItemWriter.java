@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -155,16 +156,24 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 	}
 
 	private void writeTickets(Long issueId, BasicDBList tickets) {
-		tickets.forEach(ticket -> {
-			Long ticketId = jdbcTemplate.queryForObject(INSERT_TICKET,
-					TICKETS_SOURCE_PROVIDER.createSqlParameterSource((DBObject) ticket),
-					Long.class
-			);
+		tickets.forEach((ticket -> {
+			Long ticketId;
+			try {
+				ticketId = jdbcTemplate.queryForObject("SELECT id FROM ticket WHERE ticket_id = :tid ",
+						Collections.singletonMap("tid", ((DBObject) ticket).get("ticketId")),
+						Long.class
+				);
+			} catch (Exception e) {
+				ticketId = jdbcTemplate.queryForObject(INSERT_TICKET,
+						TICKETS_SOURCE_PROVIDER.createSqlParameterSource((DBObject) ticket),
+						Long.class
+				);
+			}
 			MapSqlParameterSource parameterSource = new MapSqlParameterSource();
 			parameterSource.addValue("id", issueId);
 			parameterSource.addValue("tid", ticketId);
 			jdbcTemplate.update(INSERT_TICKET_ISSUE, parameterSource);
-		});
+		}));
 	}
 
 }
