@@ -52,7 +52,7 @@ public class UserStepConfig {
 	public MongoItemReader<DBObject> userMongoItemReader() {
 		Date fromDate = Date.from(LocalDate.parse(keepFrom).atStartOfDay(ZoneOffset.UTC).toInstant());
 		MongoItemReader<DBObject> user = MigrationUtils.getMongoItemReader(mongoTemplate, "user");
-		user.setQuery("{'metaInfo.lastLogin' : {$gte : ?0)}})");
+		user.setQuery("{'metaInfo.lastLogin' : {$gte : ?0}})");
 		user.setParameterValues(Collections.singletonList(fromDate));
 		user.setPageSize(CHUNK_SIZE);
 		return user;

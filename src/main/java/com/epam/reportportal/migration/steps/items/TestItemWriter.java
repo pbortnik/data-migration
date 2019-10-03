@@ -1,6 +1,7 @@
 package com.epam.reportportal.migration.steps.items;
 
 import com.epam.reportportal.migration.steps.CommonItemWriter;
+import com.epam.reportportal.migration.steps.utils.CacheableDataService;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import org.slf4j.Logger;
@@ -15,11 +16,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import static com.epam.reportportal.migration.steps.items.TestProviderUtils.*;
+import static com.epam.reportportal.migration.steps.items.TestProviderUtils.RETRY_SOURCE_PROVIDER;
+import static com.epam.reportportal.migration.steps.items.TestProviderUtils.TEST_SOURCE_PROVIDER;
 import static com.epam.reportportal.migration.steps.utils.MigrationUtils.toUtc;
 
 /**
@@ -54,9 +55,6 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 			"INSERT INTO issue (issue_id, issue_type, issue_description, auto_analyzed, ignore_analyzer) "
 					+ "VALUES (:id, :loc, :descr, :aa, :iga)";
 
-	private static final String INSERT_TICKET = "INSERT INTO ticket (ticket_id, submitter, submit_date, bts_url, bts_project, url) VALUES "
-			+ "(:tid, :sub, :sd, :burl, :bpr, :url) RETURNING ticket.id";
-
 	private static final String INSERT_TICKET_ISSUE = "INSERT INTO issue_ticket (issue_id, ticket_id) VALUES (:id, :tid)";
 
 	@Autowired
@@ -67,6 +65,9 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 
 	@Autowired
 	private CommonItemWriter commonItemWriter;
+
+	@Autowired
+	private CacheableDataService cacheableDataService;
 
 	@Override
 	public void write(List<? extends DBObject> items) {
@@ -157,18 +158,7 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 
 	private void writeTickets(Long issueId, BasicDBList tickets) {
 		tickets.forEach((ticket -> {
-			Long ticketId;
-			try {
-				ticketId = jdbcTemplate.queryForObject("SELECT id FROM ticket WHERE ticket_id = :tid ",
-						Collections.singletonMap("tid", ((DBObject) ticket).get("ticketId")),
-						Long.class
-				);
-			} catch (Exception e) {
-				ticketId = jdbcTemplate.queryForObject(INSERT_TICKET,
-						TICKETS_SOURCE_PROVIDER.createSqlParameterSource((DBObject) ticket),
-						Long.class
-				);
-			}
+			Long ticketId = cacheableDataService.retrieveTicketId((DBObject) ticket);
 			MapSqlParameterSource parameterSource = new MapSqlParameterSource();
 			parameterSource.addValue("id", issueId);
 			parameterSource.addValue("tid", ticketId);

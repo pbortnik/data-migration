@@ -85,12 +85,15 @@ public class UserWriter implements ItemWriter<DBObject> {
 		String metadata = "{\"metadata\": %s}";
 		if (metaInfo != null) {
 			metaInfo.put("last_login", ((Date) metaInfo.get("lastLogin")).getTime());
-			metaInfo.put("synchronizationDate", ((Date) metaInfo.get("synchronizationDate")).getTime());
+			Date synchronizationDate = (Date) metaInfo.get("synchronizationDate");
+			if (synchronizationDate != null) {
+				metaInfo.put("synchronizationDate", synchronizationDate.getTime());
+			}
 			metaInfo.remove("lastLogin");
 			if (contentType != null) {
 				metaInfo.put(ATTACHMENT_CONTENT_TYPE, contentType);
 			}
-			metadata = String.format(metadata, metaInfo.toJson());
+			metadata = String.format(metadata, metaInfo.toString());
 		} else {
 			metadata = String.format(metadata, "{}");
 		}

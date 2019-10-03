@@ -50,7 +50,7 @@ public class TestProviderUtils {
 		return parameterSource;
 	};
 
-	static final ItemSqlParameterSourceProvider<DBObject> TICKETS_SOURCE_PROVIDER = ticket -> {
+	public static final ItemSqlParameterSourceProvider<DBObject> TICKETS_SOURCE_PROVIDER = ticket -> {
 		MapSqlParameterSource parameterSource = new MapSqlParameterSource();
 		parameterSource.addValue("tid", ticket.get("ticketId"));
 		parameterSource.addValue("sub", ticket.get("submitter"));

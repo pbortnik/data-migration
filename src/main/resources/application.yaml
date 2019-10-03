@@ -1,7 +1,7 @@
 spring:
   data:
     mongodb:
-      host: localhost
+      host: dev.epm-rpp.projects.epam.com
       port: 27017
       database: reportportal
 
@@ -37,9 +37,11 @@ rp:
   ##keep launches from date in ISO_LOCAL_DATE (yyyy-MM-dd)
   launch:
     keepFrom: 2019-03-30
+  test:
+    keepFrom: 2019-03-30
   user:
     keepFrom: 2019-03-30
-  project:
+
 
 logging:
   level:

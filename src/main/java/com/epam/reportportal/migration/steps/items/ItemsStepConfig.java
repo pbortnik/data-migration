@@ -60,7 +60,7 @@ public class ItemsStepConfig {
 	@Qualifier("threadPoolTaskExecutor")
 	private ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
-	@Value("${rp.launch.keepFrom}")
+	@Value("${rp.test.keepFrom}")
 	private String keepFrom;
 
 	@Bean
