@@ -35,8 +35,6 @@ public class LogProcessor implements ItemProcessor<DBObject, DBObject> {
 	@Value("${rp.attach.keepFrom}")
 	private String keepFrom;
 
-	private Date fromDate = Date.from(LocalDate.parse(keepFrom).atStartOfDay(ZoneOffset.UTC).toInstant());
-
 	@Autowired
 	private CacheableDataService cacheableDataService;
 
@@ -57,7 +55,7 @@ public class LogProcessor implements ItemProcessor<DBObject, DBObject> {
 			GridFSDBFile file = gridFs.findOne(Query.query(Criteria.where("_id")
 					.is(new ObjectId((String) binaryContent.get("id")))
 					.and("uploadDate")
-					.gte(fromDate)));
+					.gte(Date.from(LocalDate.parse(keepFrom).atStartOfDay(ZoneOffset.UTC).toInstant()))));
 			if (file == null) {
 				return log;
 			}

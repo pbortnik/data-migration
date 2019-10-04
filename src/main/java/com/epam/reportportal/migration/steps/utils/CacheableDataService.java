@@ -116,18 +116,18 @@ public class CacheableDataService {
 	}
 
 	public Long retrieveTicketId(DBObject ticket) {
-		String btsTicketId = (String) ticket.get("ticketId");
-		Long ticketId = (Long) idsCache.getIfPresent(btsTicketId);
+		String url = (String) ticket.get("url");
+		Long ticketId = (Long) idsCache.getIfPresent(url);
 		if (ticketId == null) {
 			try {
-				ticketId = jdbcTemplate.queryForObject("SELECT id FROM ticket WHERE ticket_id = :tid ",
-						Collections.singletonMap("tid", btsTicketId),
+				ticketId = jdbcTemplate.queryForObject("SELECT id FROM ticket WHERE url = :url",
+						Collections.singletonMap("url", url),
 						Long.class
 				);
 			} catch (Exception e) {
 				ticketId = jdbcTemplate.queryForObject(INSERT_TICKET, TICKETS_SOURCE_PROVIDER.createSqlParameterSource(ticket), Long.class);
 			}
-			idsCache.put(btsTicketId, ticketId);
+			idsCache.put(url, ticketId);
 		}
 		return ticketId;
 	}
