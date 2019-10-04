@@ -17,10 +17,7 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Paths;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.migration.datastore.binary.impl.DataStoreUtils.ATTACHMENT_CONTENT_TYPE;
@@ -34,6 +31,8 @@ public class UserWriter implements ItemWriter<DBObject> {
 
 	static final String INSERT_USER = "INSERT INTO users (login, password, email, role, type, expired, full_name, metadata) VALUES "
 			+ "(:lg, :pass, :em , :rl, :tp, :exp, :fn, :md::JSONB)";
+
+	static final String INSERT_USER_SID = "INSERT INTO acl_sid (principal, sid) VALUES (TRUE, :sid)";
 
 	static final String INSERT_USER_ATTACH =
 			"INSERT INTO users (login, attachment, attachment_thumbnail, password, email, role, type, expired, full_name, metadata) VALUES "
@@ -51,6 +50,10 @@ public class UserWriter implements ItemWriter<DBObject> {
 
 	@Override
 	public void write(List<? extends DBObject> items) {
+
+		jdbcTemplate.batchUpdate(INSERT_USER_SID,
+				items.stream().map(it -> Collections.singletonMap("sid", it.get("_id").toString())).toArray(Map[]::new)
+		);
 
 		Map<Boolean, ? extends List<? extends DBObject>> splitted = items.stream()
 				.collect(Collectors.partitioningBy(it -> it.get("photoId") != null));
