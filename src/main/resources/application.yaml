@@ -23,7 +23,7 @@ rp:
     pass: rppass
 
   binarystore:
-    path: /Users/pavel_bortnik/ReportPortal5/data/storage
+    path: /Users/pavel_bortnik/data-migration/data/storage
     master:
       host: seaweed-master
       port: 9333

@@ -25,6 +25,8 @@ public class CacheableDataService {
 
 	private static final String SELECT_PROJECT_ID = "SELECT id FROM project WHERE project.name = :name";
 
+	private static final String SELECT_ACL_SID = "SELECT id FROM acl_sid WHERE sid = :name";
+
 	private static final String SELECT_LAUNCH_ID = "SELECT id FROM launch WHERE launch.uuid = :uid";
 
 	private static final String SELECT_ITEM_ID = "SELECT item_id FROM test_item WHERE test_item.uuid = :uid";
@@ -52,6 +54,20 @@ public class CacheableDataService {
 			}
 		}
 		return projectId;
+	}
+
+	public Long retrieveAclUser(String userName) {
+		Long userId = (Long) idsCache.getIfPresent(userName);
+		if (userId == null) {
+			try {
+				userId = jdbcTemplate.queryForObject(SELECT_ACL_SID, Collections.singletonMap("name", userName), Long.class);
+				idsCache.put(userName, userId);
+			} catch (EmptyResultDataAccessException e) {
+				LOGGER.debug(String.format("User with name '%s' not found.", userName));
+				return null;
+			}
+		}
+		return userId;
 	}
 
 	public Long retrieveLaunchId(String launchRef) {

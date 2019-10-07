@@ -51,10 +51,6 @@ public class UserWriter implements ItemWriter<DBObject> {
 	@Override
 	public void write(List<? extends DBObject> items) {
 
-		jdbcTemplate.batchUpdate(INSERT_USER_SID,
-				items.stream().map(it -> Collections.singletonMap("sid", it.get("_id").toString())).toArray(Map[]::new)
-		);
-
 		Map<Boolean, ? extends List<? extends DBObject>> splitted = items.stream()
 				.collect(Collectors.partitioningBy(it -> it.get("photoId") != null));
 
@@ -62,6 +58,9 @@ public class UserWriter implements ItemWriter<DBObject> {
 
 		SqlParameterSource[] parameterSources = splitted.get(false).stream().map(this::userParamSource).toArray(SqlParameterSource[]::new);
 		jdbcTemplate.batchUpdate(INSERT_USER, parameterSources);
+
+		Map[] batchValues = items.stream().map(it -> Collections.singletonMap("sid", it.get("_id").toString())).toArray(Map[]::new);
+		jdbcTemplate.batchUpdate(INSERT_USER_SID, batchValues);
 
 	}
 

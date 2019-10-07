@@ -47,9 +47,9 @@ public class FilterStepConfig {
 		return project;
 	}
 
-	@Bean
-	public Step migrateProjectsStep() {
-		return stepBuilderFactory.get("project").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(filterItemReader())
+	@Bean("migrateFilterStep")
+	public Step migrateFilterStep() {
+		return stepBuilderFactory.get("filter").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(filterItemReader())
 				.processor(filterItemProcessor)
 				.writer(filterItemWriter)
 				.listener(chunkCountListener)

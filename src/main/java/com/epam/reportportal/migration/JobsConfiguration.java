@@ -51,21 +51,26 @@ public class JobsConfiguration {
 	private Step migrateLogStep;
 
 	@Autowired
+	@Qualifier("migrateFilterStep")
+	private Step migrateFilterStep;
+
+	@Autowired
 	private MigrationJobExecutionListener migrationJobExecutionListener;
 
 	@Bean
 	public Job job() {
 		SimpleJobBuilder job = jobBuilderFactory.get("migrationJob")
 				.listener(migrationJobExecutionListener)
-				.start(migrateUserStep)
-				.next(migrateProjectsStep)
-				.next(migrateBtsStep)
-				.next(migrateLaunchStep)
-				.next(migrateLaunchNumberStep);
-		for (Step s : levelItemsFlow) {
-			job = job.next(s);
-		}
-		job.next(migrateLogStep);
+				.start(migrateFilterStep);
+//				.next(migrateProjectsStep)
+//				.next(migrateBtsStep)
+//				.next(migrateLaunchStep)
+//				.next(migrateLaunchNumberStep);
+//		for (Step s : levelItemsFlow) {
+//			job = job.next(s);
+//		}
+//		job.next(migrateLogStep);
+//		job.next(migrateFilterStep);
 		return job.build();
 	}
 
