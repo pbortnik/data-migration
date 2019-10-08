@@ -57,17 +57,12 @@ public class CacheableDataService {
 	}
 
 	public Long retrieveAclUser(String userName) {
-		Long userId = (Long) idsCache.getIfPresent(userName);
-		if (userId == null) {
-			try {
-				userId = jdbcTemplate.queryForObject(SELECT_ACL_SID, Collections.singletonMap("name", userName), Long.class);
-				idsCache.put(userName, userId);
-			} catch (EmptyResultDataAccessException e) {
-				LOGGER.debug(String.format("User with name '%s' not found.", userName));
-				return null;
-			}
+		try {
+			return jdbcTemplate.queryForObject(SELECT_ACL_SID, Collections.singletonMap("name", userName), Long.class);
+		} catch (EmptyResultDataAccessException e) {
+			LOGGER.debug(String.format("User with name '%s' not found.", userName));
+			return null;
 		}
-		return userId;
 	}
 
 	public Long retrieveLaunchId(String launchRef) {

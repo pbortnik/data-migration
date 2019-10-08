@@ -11,6 +11,7 @@ import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
@@ -22,8 +23,13 @@ public class FilterStepConfig {
 
 	private static final int CHUNK_SIZE = 1000;
 
+	public static Long ACL_CLASS;
+
 	@Autowired
 	private MongoTemplate mongoTemplate;
+
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
 	@Autowired
 	private ChunkListener chunkCountListener;
@@ -42,9 +48,23 @@ public class FilterStepConfig {
 
 	@Bean
 	public MongoItemReader<DBObject> filterItemReader() {
+		executeInitialQueries();
 		MongoItemReader<DBObject> project = MigrationUtils.getMongoItemReader(mongoTemplate, "userFilter");
 		project.setPageSize(CHUNK_SIZE);
 		return project;
+	}
+
+	private void executeInitialQueries() {
+		try {
+			ACL_CLASS = jdbcTemplate.queryForObject(
+					"INSERT INTO acl_class (class, class_id_type) VALUES ('com.epam.ta.reportportal.entity.filter.UserFilter','java.lang.Long') RETURNING id",
+					Long.class
+			);
+		} catch (Exception e) {
+			ACL_CLASS = jdbcTemplate.queryForObject("SELECT id FROM acl_class WHERE class = 'com.epam.ta.reportportal.entity.filter.UserFilter'",
+					Long.class
+			);
+		}
 	}
 
 	@Bean("migrateFilterStep")
@@ -53,7 +73,7 @@ public class FilterStepConfig {
 				.processor(filterItemProcessor)
 				.writer(filterItemWriter)
 				.listener(chunkCountListener)
-				.taskExecutor(threadPoolTaskExecutor)
+//				.taskExecutor(threadPoolTaskExecutor)
 				.build();
 	}
 

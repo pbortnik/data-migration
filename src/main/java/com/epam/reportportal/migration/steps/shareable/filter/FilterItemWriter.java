@@ -22,9 +22,11 @@ public class FilterItemWriter implements ItemWriter<DBObject> {
 
 	public static final String INSERT_FILTER = "INSERT INTO filter (id, name, target, description) VALUES (:fid, :nm, :tar, :descr)";
 
-	public static final String INSERT_FILTER_CONDITION = "INSERT INTO filter_condition (filter_id, condition, value, search_criteria, negative) VALUES (:fid, :cnd, :vl, :sc, :ng)";
+	public static final String INSERT_FILTER_CONDITION =
+			"INSERT INTO filter_condition (filter_id, condition, value, search_criteria, negative) "
+					+ "VALUES (:fid, :cnd::FILTER_CONDITION_ENUM, :vl, :sc, :ng)";
 
-	public static final String INSERT_FILTER_SORT = "INSERT INTO filter_sort (filter_id, field, direction) VALUES (:fid, :fld, :dir)";
+	public static final String INSERT_FILTER_SORT = "INSERT INTO filter_sort (filter_id, field, direction) VALUES (:fid, :fld, :dir::SORT_DIRECTION_ENUM)";
 
 	@Autowired
 	private ShareableWriter shareableWriter;
@@ -42,7 +44,7 @@ public class FilterItemWriter implements ItemWriter<DBObject> {
 			writeFilter(filter, entityId);
 			filterConditions.addAll(conditionsSqlSources(filter, entityId));
 			filterSort.addAll(sortSqlSources(filter, entityId));
-			shareableWriter.writeAcl(filter, entityId);
+			shareableWriter.writeAcl(filter, entityId, FilterStepConfig.ACL_CLASS);
 		});
 
 		jdbcTemplate.batchUpdate(INSERT_FILTER_CONDITION, filterConditions.stream().toArray(SqlParameterSource[]::new));
@@ -66,7 +68,7 @@ public class FilterItemWriter implements ItemWriter<DBObject> {
 			MapSqlParameterSource params = new MapSqlParameterSource();
 			params.addValue("fid", entityId);
 			params.addValue("fld", ((DBObject) order).get("sortingColumnName"));
-			String direction = ((boolean) ((DBObject) order).get("isAcs")) ? "ASC" : "DESC";
+			String direction = ((boolean) ((DBObject) order).get("isAsc")) ? "ASC" : "DESC";
 			params.addValue("dir", direction);
 			return params;
 		}).collect(Collectors.toList());
