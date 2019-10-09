@@ -3,8 +3,13 @@ package com.epam.reportportal.migration.steps.shareable.filter;
 import com.epam.reportportal.migration.steps.shareable.ShareableWriter;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
+import org.bson.types.ObjectId;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
@@ -34,6 +39,9 @@ public class FilterItemWriter implements ItemWriter<DBObject> {
 	@Autowired
 	private NamedParameterJdbcTemplate jdbcTemplate;
 
+	@Autowired
+	private MongoTemplate mongoTemplate;
+
 	@Override
 	public void write(List<? extends DBObject> items) {
 		List<MapSqlParameterSource> filterConditions = new ArrayList<>(items.size());
@@ -45,10 +53,19 @@ public class FilterItemWriter implements ItemWriter<DBObject> {
 			filterConditions.addAll(conditionsSqlSources(filter, entityId));
 			filterSort.addAll(sortSqlSources(filter, entityId));
 			shareableWriter.writeAcl(filter, entityId, FilterStepConfig.ACL_CLASS);
+			storeIdsMapping(filter, entityId);
 		});
 
-		jdbcTemplate.batchUpdate(INSERT_FILTER_CONDITION, filterConditions.stream().toArray(SqlParameterSource[]::new));
-		jdbcTemplate.batchUpdate(INSERT_FILTER_SORT, filterSort.stream().toArray(SqlParameterSource[]::new));
+		jdbcTemplate.batchUpdate(INSERT_FILTER_CONDITION, filterConditions.toArray(new SqlParameterSource[0]));
+		jdbcTemplate.batchUpdate(INSERT_FILTER_SORT, filterSort.toArray(new SqlParameterSource[0]));
+	}
+
+	private void storeIdsMapping(DBObject filter, Long entityId) {
+		mongoTemplate.upsert(
+				Query.query(Criteria.where("_id").is(new ObjectId(filter.get("_id").toString()))),
+				Update.update("postgresId", entityId),
+				"filterMapping"
+		);
 	}
 
 	private List<MapSqlParameterSource> conditionsSqlSources(DBObject filter, Long entityId) {
@@ -79,7 +96,7 @@ public class FilterItemWriter implements ItemWriter<DBObject> {
 		DBObject info = (DBObject) filter.get("filter");
 
 		String className = (String) ((DBObject) info.get("target")).get("className");
-		String target = className.substring(className.lastIndexOf("."), className.length() - 1);
+		String target = className.substring(className.lastIndexOf(".") + 1);
 
 		MapSqlParameterSource parameterSource = new MapSqlParameterSource();
 		parameterSource.addValue("fid", entityId);
