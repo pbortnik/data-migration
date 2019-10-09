@@ -55,13 +55,18 @@ public class JobsConfiguration {
 	private Step migrateFilterStep;
 
 	@Autowired
+	@Qualifier("migrateWidgetStep")
+	private Step migrateWidgetStep;
+
+	@Autowired
 	private MigrationJobExecutionListener migrationJobExecutionListener;
 
 	@Bean
 	public Job job() {
 		SimpleJobBuilder job = jobBuilderFactory.get("migrationJob")
 				.listener(migrationJobExecutionListener)
-				.start(migrateFilterStep);
+				.start(migrateWidgetStep);
+//				.next(migrateWidgetStep);
 //				.next(migrateProjectsStep)
 //				.next(migrateBtsStep)
 //				.next(migrateLaunchStep)

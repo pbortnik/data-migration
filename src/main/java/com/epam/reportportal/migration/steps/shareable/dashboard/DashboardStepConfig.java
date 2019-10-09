@@ -19,7 +19,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 //@Component
 public class DashboardStepConfig {
 
-	private static final int CHUNK_SIZE = 1000;
+	private static final int CHUNK_SIZE = 100;
 
 	@Autowired
 	private MongoTemplate mongoTemplate;
@@ -34,10 +34,10 @@ public class DashboardStepConfig {
 	private StepBuilderFactory stepBuilderFactory;
 
 	@Autowired
-	private ItemProcessor dashboardItemProcessor;
+	private ItemProcessor dashboardProcessor;
 
 	@Autowired
-	private ItemWriter dashboardItemWriter;
+	private ItemWriter dashboardWriter;
 
 	@Bean
 	public MongoItemReader<DBObject> dashboardItemReader() {
@@ -49,8 +49,8 @@ public class DashboardStepConfig {
 	@Bean
 	public Step migrateDashboardStep() {
 		return stepBuilderFactory.get("dashboard").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(dashboardItemReader())
-				.processor(dashboardItemProcessor)
-				.writer(dashboardItemWriter)
+				.processor(dashboardProcessor)
+				.writer(dashboardWriter)
 				.listener(chunkCountListener)
 				.taskExecutor(threadPoolTaskExecutor)
 				.build();

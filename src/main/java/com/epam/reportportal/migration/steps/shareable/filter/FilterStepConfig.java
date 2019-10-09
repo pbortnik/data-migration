@@ -73,7 +73,7 @@ public class FilterStepConfig {
 				.processor(filterItemProcessor)
 				.writer(filterItemWriter)
 				.listener(chunkCountListener)
-//				.taskExecutor(threadPoolTaskExecutor)
+				.taskExecutor(threadPoolTaskExecutor)
 				.build();
 	}
 
