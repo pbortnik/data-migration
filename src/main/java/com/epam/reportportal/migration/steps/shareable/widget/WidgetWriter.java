@@ -91,7 +91,10 @@ public class WidgetWriter implements ItemWriter<DBObject> {
 
 	private void storeIdsMapping(DBObject widget, Long entityId) {
 		mongoTemplate.upsert(Query.query(Criteria.where("_id").is(new ObjectId(widget.get("_id").toString()))),
-				Update.update("postgresId", entityId),
+				Update.update("postgresId", entityId)
+						.setOnInsert("name", widget.get("name"))
+						.setOnInsert("owner", ((DBObject) widget.get("acl")).get("ownerUserId"))
+						.setOnInsert("type", TYPE_MAPPING.get(((DBObject) widget.get("contentOptions")).get("gadgetType"))),
 				"widgetMapping"
 		);
 	}
