@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
 @Component
-public class FilterItemProcessor implements ItemProcessor<DBObject, DBObject> {
+public class FilterProcessor implements ItemProcessor<DBObject, DBObject> {
 
 	@Autowired
 	private ShareableUtilService shareableUtilService;

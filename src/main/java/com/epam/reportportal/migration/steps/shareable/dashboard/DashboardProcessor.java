@@ -1,30 +1,20 @@
 package com.epam.reportportal.migration.steps.shareable.dashboard;
 
 import com.epam.reportportal.migration.steps.shareable.ShareableUtilService;
-import com.epam.reportportal.migration.steps.shareable.widget.WidgetProcessor;
-import com.epam.reportportal.migration.steps.shareable.widget.WidgetWriter;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
-@SuppressWarnings("SuspiciousMethodCalls")
 @Component
 public class DashboardProcessor implements ItemProcessor<DBObject, DBObject> {
-
-	@Autowired
-	private WidgetProcessor widgetProcessor;
-
-	@Autowired
-	private WidgetWriter widgetWriter;
 
 	@Autowired
 	private ShareableUtilService shareableUtilService;
@@ -43,7 +33,15 @@ public class DashboardProcessor implements ItemProcessor<DBObject, DBObject> {
 	}
 
 	private void retrieveWidgets(BasicDBList widgets) {
-		List<Object> ids = widgets.stream().map(it -> ((DBObject) it).get("_id")).collect(Collectors.toList());
+		widgets.stream().map(DBObject.class::cast).forEach(widget -> {
+			DBObject one = mongoTemplate.findOne(Query.query(Criteria.where("_id").is(widget.get("widgetId"))),
+					DBObject.class,
+					"widgetMapping"
+			);
+			if (one != null) {
+				widget.putAll(one);
+			}
+		});
 	}
 
 }

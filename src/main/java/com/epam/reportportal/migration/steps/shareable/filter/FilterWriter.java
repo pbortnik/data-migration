@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
 @Component
-public class FilterItemWriter implements ItemWriter<DBObject> {
+public class FilterWriter implements ItemWriter<DBObject> {
 
 	public static final String INSERT_FILTER = "INSERT INTO filter (id, name, target, description) VALUES (:fid, :nm, :tar, :descr)";
 
@@ -69,23 +69,26 @@ public class FilterItemWriter implements ItemWriter<DBObject> {
 	}
 
 	private List<MapSqlParameterSource> conditionsSqlSources(DBObject filter, Long entityId) {
-		return ((BasicDBList) ((DBObject) filter.get("filter")).get("filterConditions")).stream().map(condition -> {
-			MapSqlParameterSource params = new MapSqlParameterSource();
-			params.addValue("fid", entityId);
-			params.addValue("cnd", ((DBObject) condition).get("condition"));
-			params.addValue("vl", ((DBObject) condition).get("value"));
-			params.addValue("sc", ((DBObject) condition).get("searchCriteria"));
-			params.addValue("ng", ((DBObject) condition).get("negative"));
-			return params;
-		}).collect(Collectors.toList());
+		return ((BasicDBList) ((DBObject) filter.get("filter")).get("filterConditions")).stream()
+				.map(DBObject.class::cast)
+				.map(condition -> {
+					MapSqlParameterSource params = new MapSqlParameterSource();
+					params.addValue("fid", entityId);
+					params.addValue("cnd", condition.get("condition"));
+					params.addValue("vl", condition.get("value"));
+					params.addValue("sc", condition.get("searchCriteria"));
+					params.addValue("ng", condition.get("negative"));
+					return params;
+				})
+				.collect(Collectors.toList());
 	}
 
 	private List<MapSqlParameterSource> sortSqlSources(DBObject filter, Long entityId) {
-		return ((BasicDBList) ((DBObject) filter.get("selectionOptions")).get("orders")).stream().map(order -> {
+		return ((BasicDBList) ((DBObject) filter.get("selectionOptions")).get("orders")).stream().map(DBObject.class::cast).map(order -> {
 			MapSqlParameterSource params = new MapSqlParameterSource();
 			params.addValue("fid", entityId);
-			params.addValue("fld", ((DBObject) order).get("sortingColumnName"));
-			String direction = ((boolean) ((DBObject) order).get("isAsc")) ? "ASC" : "DESC";
+			params.addValue("fld", order.get("sortingColumnName"));
+			String direction = ((boolean) order.get("isAsc")) ? "ASC" : "DESC";
 			params.addValue("dir", direction);
 			return params;
 		}).collect(Collectors.toList());

@@ -41,10 +41,10 @@ public class FilterStepConfig {
 	private StepBuilderFactory stepBuilderFactory;
 
 	@Autowired
-	private ItemProcessor filterItemProcessor;
+	private ItemProcessor<DBObject, DBObject> filterProcessor;
 
 	@Autowired
-	private ItemWriter filterItemWriter;
+	private ItemWriter<DBObject> filterWriter;
 
 	@Bean
 	public MongoItemReader<DBObject> filterItemReader() {
@@ -70,8 +70,8 @@ public class FilterStepConfig {
 	@Bean("migrateFilterStep")
 	public Step migrateFilterStep() {
 		return stepBuilderFactory.get("filter").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(filterItemReader())
-				.processor(filterItemProcessor)
-				.writer(filterItemWriter)
+				.processor(filterProcessor)
+				.writer(filterWriter)
 				.listener(chunkCountListener)
 				.taskExecutor(threadPoolTaskExecutor)
 				.build();

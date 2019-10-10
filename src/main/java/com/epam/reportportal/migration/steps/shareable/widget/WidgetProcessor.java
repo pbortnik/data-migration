@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
@@ -29,14 +30,16 @@ public class WidgetProcessor implements ItemProcessor<DBObject, DBObject> {
 			return null;
 		}
 		Long filterId = processFilter(item);
-		if (filterId == null) {
-			return null;
+		if (filterId != null) {
+			item.put("filterId", filterId);
 		}
-		item.put("filterId", filterId);
 		return item;
 	}
 
 	private Long processFilter(DBObject item) {
+		if (StringUtils.isEmpty(item.get("applyingFilterId"))) {
+			return null;
+		}
 		return (Long) mongoTemplate.findOne(
 				Query.query(Criteria.where("_id").is(new ObjectId(item.get("applyingFilterId").toString()))),
 				DBObject.class,

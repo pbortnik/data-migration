@@ -13,13 +13,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
-//@Component
+@Component
 public class DashboardStepConfig {
 
 	private static final int CHUNK_SIZE = 100;
@@ -42,10 +43,10 @@ public class DashboardStepConfig {
 	private StepBuilderFactory stepBuilderFactory;
 
 	@Autowired
-	private ItemProcessor dashboardProcessor;
+	private ItemProcessor<DBObject, DBObject> dashboardProcessor;
 
 	@Autowired
-	private ItemWriter dashboardWriter;
+	private ItemWriter<DBObject> dashboardWriter;
 
 	@PostConstruct
 	public void initialQueries() {

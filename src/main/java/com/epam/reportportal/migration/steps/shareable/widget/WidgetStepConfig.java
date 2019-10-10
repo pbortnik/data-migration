@@ -47,6 +47,37 @@ public class WidgetStepConfig {
 			.put("most_time_consuming", "mostTimeConsuming")
 			.build();
 
+	public static Map<String, String> WIDGET_OPTIONS_MAPPING = ImmutableMap.<String, String>builder().put("filterName", "launchNameFilter")
+			.put("start_launch", "startLaunch")
+			.put("finish_launch", "finishLaunch")
+			.put("delete_launch", "deleteLaunch")
+			.put("post_issue", "postIssue")
+			.put("link_issue", "linkIssue")
+			.put("unlink_issue", "unlinkIssue")
+			.put("create_user", "createUser")
+			.put("create_dashboard", "createDashboard")
+			.put("update_dashboard", "updateDashboard")
+			.put("delete_dashboard", "deleteDashboard")
+			.put("create_widget", "createWidget")
+			.put("update_widget", "updateWidget")
+			.put("delete_widget", "deleteWidget")
+			.put("create_filter", "createFilter")
+			.put("update_filter", "updateFilter")
+			.put("delete_filter", "deleteFilter")
+			.put("create_bts", "createIntegration")
+			.put("update_bts", "updateIntegration")
+			.put("delete_bts", "deleteIntegration")
+			.put("update_project", "updateProject")
+			.put("update_analyzer", "updateAnalyzer")
+			.put("generate_index","generateIndex" )
+			.put("delete_index", "deleteIndex")
+			.put("create_defect", "createDefect")
+			.put("update_defect", "updateDefect")
+			.put("delete_defect", "deleteDefect")
+			.put("start_import", "startImport")
+			.put("finish_import", "finishImport")
+			.build();
+
 	static Long ACL_CLASS;
 
 	private static final int CHUNK_SIZE = 1000;
@@ -67,10 +98,10 @@ public class WidgetStepConfig {
 	private StepBuilderFactory stepBuilderFactory;
 
 	@Autowired
-	private ItemProcessor widgetProcessor;
+	private ItemProcessor<DBObject, DBObject> widgetProcessor;
 
 	@Autowired
-	private ItemWriter widgetWriter;
+	private ItemWriter<DBObject> widgetWriter;
 
 	@PostConstruct
 	public void initialQueries() {
@@ -99,7 +130,7 @@ public class WidgetStepConfig {
 				.processor(widgetProcessor)
 				.writer(widgetWriter)
 				.listener(chunkCountListener)
-				.taskExecutor(threadPoolTaskExecutor)
+//				.taskExecutor(threadPoolTaskExecutor)
 				.build();
 	}
 
