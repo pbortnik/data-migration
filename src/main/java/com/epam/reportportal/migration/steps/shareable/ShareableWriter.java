@@ -27,7 +27,7 @@ public class ShareableWriter {
 			"INSERT INTO acl_entry (acl_object_identity, ace_order, sid, mask, granting, audit_success, audit_failure)"
 					+ "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-	private static final String SELECT_PROJECT_USERS = "SELECT acl_sid.id, project_role FROM project_user "
+	private static final String SELECT_PROJECT_USERS = "SELECT acl_sid.id, project_role, users.role FROM project_user "
 			+ "JOIN users ON project_user.user_id = users.id JOIN acl_sid ON users.login = sid"
 			+ " WHERE project_id = ? AND acl_sid.id != ?";
 
@@ -61,7 +61,7 @@ public class ShareableWriter {
 		int i = 1;
 		for (Map.Entry<Long, String> entry : users.entrySet()) {
 			int mask = 1;
-			if (entry.getValue().equalsIgnoreCase("PROJECT_MANAGER")) {
+			if (entry.getValue().equalsIgnoreCase("PROJECT_MANAGER") || entry.getValue().equalsIgnoreCase("ADMINISTRATOR")) {
 				mask = 16;
 			}
 			List<Object> sqlParams = Lists.newLinkedList();
@@ -83,7 +83,11 @@ public class ShareableWriter {
 		return jdbcTemplate.query(SELECT_PROJECT_USERS, rs -> {
 			Map<Long, String> users = new HashMap<>();
 			while (rs.next()) {
-				users.put(rs.getLong(1), rs.getString(2));
+				if (rs.getString(3).equalsIgnoreCase("ADMINISTRATOR")) {
+					users.put(rs.getLong(1), rs.getString(3));
+				} else {
+					users.put(rs.getLong(1), rs.getString(2));
+				}
 			}
 			return users;
 		}, entity.get("projectId"), entity.get("ownerId"));
