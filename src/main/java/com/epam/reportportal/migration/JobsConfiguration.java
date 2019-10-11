@@ -67,20 +67,19 @@ public class JobsConfiguration {
 
 	@Bean
 	public Job job() {
-		SimpleJobBuilder job = jobBuilderFactory.get("migrationJob")
-				.listener(migrationJobExecutionListener)
-				.start(migrateWidgetStep);
-		//				.next(migrateUserStep);
-		//				.next(migrateProjectsStep)
-		//				.next(migrateBtsStep)
-		//				.next(migrateLaunchStep)
-		//				.next(migrateLaunchNumberStep);
-		//		for (Step s : levelItemsFlow) {
-		//			job = job.next(s);
-		//		}
-		//		job.next(migrateLogStep);
-		//		job.next(migrateFilterStep);
-		//		job.next(migrateWidgetStep);
+		SimpleJobBuilder job = jobBuilderFactory.get("migrationJob").listener(migrationJobExecutionListener)
+				.start(migrateUserStep)
+				.next(migrateProjectsStep)
+				.next(migrateBtsStep)
+				.next(migrateLaunchStep)
+				.next(migrateLaunchNumberStep);
+		for (Step s : levelItemsFlow) {
+			job = job.next(s);
+		}
+		job.next(migrateLogStep);
+		job.next(migrateFilterStep);
+		job.next(migrateWidgetStep);
+		job.next(migrateDashboardStep);
 		return job.build();
 	}
 

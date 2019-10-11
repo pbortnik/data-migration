@@ -22,6 +22,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.index.CompoundIndexDefinition;
 import org.springframework.data.mongodb.core.index.Index;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
@@ -133,9 +134,12 @@ public class ItemsStepConfig {
 	}
 
 	private void prepareCollectionForMigration() {
-		DBObject testItem = mongoTemplate.findOne(new Query().limit(1), DBObject.class, "testItem");
+		DBObject testItem = mongoTemplate.findOne(new Query().addCriteria(Criteria.where("pathLevel").exists(false)).limit(1),
+				DBObject.class,
+				"testItem"
+		);
 
-		if (null == testItem.get("pathLevel")) {
+		if (null != testItem) {
 			mongoTemplate.aggregate(Aggregation.newAggregation(
 					context -> new BasicDBObject("$addFields", new BasicDBObject("pathLevel", new BasicDBObject("$size", "$path"))),
 					Aggregation.out("testItem")
