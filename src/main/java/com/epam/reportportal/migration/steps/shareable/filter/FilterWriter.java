@@ -1,6 +1,7 @@
 package com.epam.reportportal.migration.steps.shareable.filter;
 
 import com.epam.reportportal.migration.steps.shareable.ShareableWriter;
+import com.google.common.collect.ImmutableMap;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import org.bson.types.ObjectId;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -61,12 +63,16 @@ public class FilterWriter implements ItemWriter<DBObject> {
 	}
 
 	private void storeIdsMapping(DBObject filter, Long entityId) {
-		mongoTemplate.upsert(
-				Query.query(Criteria.where("_id").is(new ObjectId(filter.get("_id").toString()))),
+		mongoTemplate.upsert(Query.query(Criteria.where("_id").is(new ObjectId(filter.get("_id").toString()))),
 				Update.update("postgresId", entityId),
 				"filterMapping"
 		);
 	}
+
+	private static Map<String, String> FIELDS_MAPPING = ImmutableMap.<String, String>builder().put("start_time", "startTime")
+			.put("end_time", "endTime")
+			.put("tags", "attributeValue")
+			.build();
 
 	private List<MapSqlParameterSource> conditionsSqlSources(DBObject filter, Long entityId) {
 		return ((BasicDBList) ((DBObject) filter.get("filter")).get("filterConditions")).stream()
@@ -76,7 +82,9 @@ public class FilterWriter implements ItemWriter<DBObject> {
 					params.addValue("fid", entityId);
 					params.addValue("cnd", condition.get("condition"));
 					params.addValue("vl", condition.get("value"));
-					params.addValue("sc", condition.get("searchCriteria"));
+					params.addValue("sc",
+							FIELDS_MAPPING.getOrDefault(condition.get("searchCriteria"), (String) condition.get("searchCriteria"))
+					);
 					params.addValue("ng", condition.get("negative"));
 					return params;
 				})
@@ -87,7 +95,7 @@ public class FilterWriter implements ItemWriter<DBObject> {
 		return ((BasicDBList) ((DBObject) filter.get("selectionOptions")).get("orders")).stream().map(DBObject.class::cast).map(order -> {
 			MapSqlParameterSource params = new MapSqlParameterSource();
 			params.addValue("fid", entityId);
-			params.addValue("fld", order.get("sortingColumnName"));
+			params.addValue("fld", FIELDS_MAPPING.getOrDefault(order.get("sortingColumnName"), (String) order.get("sortingColumnName")));
 			String direction = ((boolean) order.get("isAsc")) ? "ASC" : "DESC";
 			params.addValue("dir", direction);
 			return params;
