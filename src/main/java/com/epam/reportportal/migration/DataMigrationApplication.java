@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 @SpringBootApplication
 public class DataMigrationApplication {
 
-
 	@Bean
 	public Cache<String, Long> customStatisticsFieldsCache() {
 		return Caffeine.newBuilder().initialCapacity(100).maximumSize(1000).expireAfterAccess(30, TimeUnit.MINUTES).build();

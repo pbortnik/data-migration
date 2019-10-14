@@ -1,6 +1,7 @@
 package com.epam.reportportal.migration.steps.shareable.widget;
 
 import com.epam.reportportal.migration.steps.shareable.ShareableWriter;
+import com.epam.reportportal.migration.steps.utils.CacheableDataService;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -19,14 +20,15 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.epam.reportportal.migration.steps.shareable.widget.WidgetStepConfig.TYPE_MAPPING;
-import static com.epam.reportportal.migration.steps.shareable.widget.WidgetStepConfig.WIDGET_OPTIONS_MAPPING;
+import static com.epam.reportportal.migration.steps.shareable.widget.WidgetStepConfig.*;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
+@SuppressWarnings("ALL")
 @Component
 public class WidgetWriter implements ItemWriter<DBObject> {
 
@@ -49,20 +51,30 @@ public class WidgetWriter implements ItemWriter<DBObject> {
 	@Autowired
 	private ShareableWriter shareableWriter;
 
+	@Autowired
+	private CacheableDataService cacheableDataService;
+
 	@Override
 	public void write(List<? extends DBObject> items) {
+		Map<String, Long> filterMapping = cacheableDataService.loadFilterIdsMapping(items.stream()
+				.map(it -> it.get("applyingFilterId"))
+				.map(id -> new ObjectId((String) id))
+				.collect(Collectors.toSet()));
+
 		List<Object[]> widgetFilter = new ArrayList<>(items.size());
 		List<Object[]> contentFields = new ArrayList<>();
+
 		items.forEach(widget -> {
 			Long widgetId = write(widget);
 			contentFields.addAll(contentFieldsSqlSources(widgetId,
 					(BasicDBList) ((DBObject) widget.get("contentOptions")).get("contentFields")
 			));
-			if (widget.get("filterId") != null) {
-				widgetFilter.add(new Object[] { widgetId, widget.get("filterId") });
+			if (null != filterMapping.get(widget.get("applyingFilterId"))) {
+				widgetFilter.add(new Object[] { widgetId, filterMapping.get(widget.get("applyingFilterId")) });
 			}
 			storeIdsMapping(widget, widgetId);
 		});
+
 		template.batchUpdate(INSERT_WIDGET_FILTER, widgetFilter);
 		template.batchUpdate(INSERT_CONTENT_FIELDS, contentFields);
 	}
@@ -180,6 +192,8 @@ public class WidgetWriter implements ItemWriter<DBObject> {
 		BasicDBList viewMode = (BasicDBList) widgetOptions.get("viewMode");
 		if (!CollectionUtils.isEmpty(viewMode)) {
 			widgetOptions.put("viewMode", viewMode.get(0));
+		} else {
+			widgetOptions.put("viewMode", "panel");
 		}
 		return widgetOptions;
 	}
@@ -238,7 +252,12 @@ public class WidgetWriter implements ItemWriter<DBObject> {
 	}
 
 	private List<Object[]> contentFieldsSqlSources(Long widgetId, BasicDBList contentFields) {
-		return contentFields.stream().map(cf -> new Object[] { widgetId, ((String) cf).toLowerCase() }).collect(Collectors.toList());
+		return contentFields.stream().map(cf -> CF_MAPPING.getOrDefault(cf, (String) cf)).map(cf -> {
+			if (cf.startsWith("statistics")) {
+				return cf.toLowerCase();
+			}
+			return cf;
+		}).map(cf -> new Object[] { widgetId, cf }).collect(Collectors.toList());
 	}
 
 	private void storeIdsMapping(DBObject widget, Long entityId) {

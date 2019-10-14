@@ -63,12 +63,20 @@ public class JobsConfiguration {
 	private Step migrateDashboardStep;
 
 	@Autowired
+	private Step migratePreferencesStep;
+
+	@Autowired
+	private Step migrateTokensStep;
+
+	@Autowired
 	private MigrationJobExecutionListener migrationJobExecutionListener;
 
 	@Bean
 	public Job job() {
-		SimpleJobBuilder job = jobBuilderFactory.get("migrationJob").listener(migrationJobExecutionListener)
+		SimpleJobBuilder job = jobBuilderFactory.get("migrationJob")
+				.listener(migrationJobExecutionListener)
 				.start(migrateUserStep)
+				.next(migrateTokensStep)
 				.next(migrateProjectsStep)
 				.next(migrateBtsStep)
 				.next(migrateLaunchStep)
@@ -80,6 +88,7 @@ public class JobsConfiguration {
 		job.next(migrateFilterStep);
 		job.next(migrateWidgetStep);
 		job.next(migrateDashboardStep);
+		job.next(migratePreferencesStep);
 		return job.build();
 	}
 

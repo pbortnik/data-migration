@@ -1,5 +1,6 @@
 package com.epam.reportportal.migration.steps.shareable.widget;
 
+import com.epam.reportportal.migration.steps.shareable.ShareableUtilService;
 import com.epam.reportportal.migration.steps.utils.MigrationUtils;
 import com.google.common.collect.ImmutableMap;
 import com.mongodb.DBObject;
@@ -25,6 +26,11 @@ import java.util.Map;
 @Component
 public class WidgetStepConfig {
 
+	public static Map<String, String> CF_MAPPING = ImmutableMap.<String, String>builder().put("tags", "attributes")
+			.put("start_time", "startTime")
+			.put("end_time", "endTime")
+			.put("last_modified", "lastModified")
+			.build();
 	public static Map<String, String> TYPE_MAPPING = ImmutableMap.<String, String>builder().put("old_line_chart", "oldLineChart")
 			.put("investigated_trend", "investigatedTrend")
 			.put("launch_statistics", "launchStatistics")
@@ -69,7 +75,7 @@ public class WidgetStepConfig {
 			.put("delete_bts", "deleteIntegration")
 			.put("update_project", "updateProject")
 			.put("update_analyzer", "updateAnalyzer")
-			.put("generate_index","generateIndex" )
+			.put("generate_index", "generateIndex")
 			.put("delete_index", "deleteIndex")
 			.put("create_defect", "createDefect")
 			.put("update_defect", "updateDefect")
@@ -98,10 +104,10 @@ public class WidgetStepConfig {
 	private StepBuilderFactory stepBuilderFactory;
 
 	@Autowired
-	private ItemProcessor<DBObject, DBObject> widgetProcessor;
+	private ItemWriter<DBObject> widgetWriter;
 
 	@Autowired
-	private ItemWriter<DBObject> widgetWriter;
+	private ShareableUtilService shareableUtilService;
 
 	@PostConstruct
 	public void initialQueries() {
@@ -127,11 +133,21 @@ public class WidgetStepConfig {
 	@Bean("migrateWidgetStep")
 	public Step migrateWidgetStep() {
 		return stepBuilderFactory.get("widget").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(widgetItemReader())
-				.processor(widgetProcessor)
+				.processor(widgetProcessor())
 				.writer(widgetWriter)
 				.listener(chunkCountListener)
-//				.taskExecutor(threadPoolTaskExecutor)
+				.taskExecutor(threadPoolTaskExecutor)
 				.build();
+	}
+
+	private ItemProcessor<DBObject, DBObject> widgetProcessor() {
+		return widget -> {
+			boolean processed = shareableUtilService.processShareableEntity(widget);
+			if (!processed) {
+				return null;
+			}
+			return widget;
+		};
 	}
 
 }

@@ -3,15 +3,22 @@ package com.epam.reportportal.migration.steps.utils;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.epam.reportportal.migration.steps.items.TestProviderUtils.TICKETS_SOURCE_PROVIDER;
 
@@ -24,6 +31,8 @@ public class CacheableDataService {
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
 	private static final String SELECT_PROJECT_ID = "SELECT id FROM project WHERE project.name = :name";
+
+	private static final String SELECT_USER_ID = "SELECT id FROM users WHERE users.login = :name";
 
 	private static final String SELECT_ACL_SID = "SELECT id FROM acl_sid WHERE sid = :name";
 
@@ -42,6 +51,9 @@ public class CacheableDataService {
 	@Autowired
 	private NamedParameterJdbcTemplate jdbcTemplate;
 
+	@Autowired
+	private MongoTemplate mongoTemplate;
+
 	public Long retrieveProjectId(String projectName) {
 		Long projectId = (Long) idsCache.getIfPresent(projectName);
 		if (projectId == null) {
@@ -59,6 +71,15 @@ public class CacheableDataService {
 	public Long retrieveAclUser(String userName) {
 		try {
 			return jdbcTemplate.queryForObject(SELECT_ACL_SID, Collections.singletonMap("name", userName), Long.class);
+		} catch (EmptyResultDataAccessException e) {
+			LOGGER.debug(String.format("User with name '%s' not found.", userName));
+			return null;
+		}
+	}
+
+	public Long retrieveUser(String userName) {
+		try {
+			return jdbcTemplate.queryForObject(SELECT_USER_ID, Collections.singletonMap("name", userName), Long.class);
 		} catch (EmptyResultDataAccessException e) {
 			LOGGER.debug(String.format("User with name '%s' not found.", userName));
 			return null;
@@ -141,5 +162,12 @@ public class CacheableDataService {
 			idsCache.put(url, ticketId);
 		}
 		return ticketId;
+	}
+
+	public Map<String, Long> loadFilterIdsMapping(Set<ObjectId> mongoIds) {
+		Query query = Query.query(Criteria.where("_id").in(mongoIds));
+		return mongoTemplate.find(query, DBObject.class, "filterMapping")
+				.stream()
+				.collect(Collectors.toMap(it -> it.get("_id").toString(), it -> (Long) it.get("postgresId")));
 	}
 }
