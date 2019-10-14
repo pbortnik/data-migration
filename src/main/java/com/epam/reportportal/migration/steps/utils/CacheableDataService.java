@@ -49,6 +49,9 @@ public class CacheableDataService {
 	private Cache<String, Object> idsCache;
 
 	@Autowired
+	private Cache<String, Long> usersCache;
+
+	@Autowired
 	private NamedParameterJdbcTemplate jdbcTemplate;
 
 	@Autowired
@@ -78,12 +81,17 @@ public class CacheableDataService {
 	}
 
 	public Long retrieveUser(String userName) {
-		try {
-			return jdbcTemplate.queryForObject(SELECT_USER_ID, Collections.singletonMap("name", userName), Long.class);
-		} catch (EmptyResultDataAccessException e) {
-			LOGGER.debug(String.format("User with name '%s' not found.", userName));
-			return null;
+		Long userId = usersCache.getIfPresent(userName);
+		if (userId == null) {
+			try {
+				userId = jdbcTemplate.queryForObject(SELECT_USER_ID, Collections.singletonMap("name", userName), Long.class);
+				idsCache.put(userName, userId);
+			} catch (EmptyResultDataAccessException e) {
+				LOGGER.debug(String.format("User with name '%s' not found.", userName));
+				return null;
+			}
 		}
+		return userId;
 	}
 
 	public Long retrieveLaunchId(String launchRef) {
