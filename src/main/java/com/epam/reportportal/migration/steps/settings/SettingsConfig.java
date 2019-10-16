@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 public class SettingsConfig {
 
 	private static final String INSERT_SERVER_SETTINGS = "INSERT INTO server_settings (key, value) VALUES (?,?)";
-	private static final String INSERT_INTEGRATION = "INSERT INTO integration (name, type, enabled, params, creator) VALUES (:nm,:tp,:en,:par::JSONB,:cr)";
+	static final String INSERT_INTEGRATION = "INSERT INTO integration (name, type, enabled, params, creator) VALUES (:nm,:tp,:en,:par::JSONB,:cr) RETURNING id";
 	private static final Long EMAIL_INTEGRAION_ID = 2L;
 
 	@Autowired
