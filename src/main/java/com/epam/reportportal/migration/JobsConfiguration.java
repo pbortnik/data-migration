@@ -69,6 +69,9 @@ public class JobsConfiguration {
 	private Step migrateTokensStep;
 
 	@Autowired
+	private Step migrateSettingsStep;
+
+	@Autowired
 	private MigrationJobExecutionListener migrationJobExecutionListener;
 
 	@Bean
@@ -78,6 +81,7 @@ public class JobsConfiguration {
 				.start(migrateUserStep)
 				.next(migrateTokensStep)
 				.next(migrateProjectsStep)
+				.next(migrateSettingsStep)
 				.next(migrateBtsStep)
 				.next(migrateLaunchStep)
 				.next(migrateLaunchNumberStep);

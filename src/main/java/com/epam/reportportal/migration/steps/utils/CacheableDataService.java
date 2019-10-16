@@ -81,6 +81,9 @@ public class CacheableDataService {
 	}
 
 	public Long retrieveUser(String userName) {
+		if (userName == null) {
+			return null;
+		}
 		Long userId = usersCache.getIfPresent(userName);
 		if (userId == null) {
 			try {

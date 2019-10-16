@@ -14,6 +14,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +28,7 @@ import java.util.stream.Collectors;
 public class SettingsConfig {
 
 	private static final String INSERT_SERVER_SETTINGS = "INSERT INTO server_settings (key, value) VALUES (?,?)";
-	private static final String INSERT_INTEGRATION = "INSERT INTO integration (name, type, enabled, params, creator) VALUES (?,?,?,?,?)";
+	private static final String INSERT_INTEGRATION = "INSERT INTO integration (name, type, enabled, params, creator) VALUES (:nm,:tp,:en,:par::JSONB,:cr)";
 	private static final Long EMAIL_INTEGRAION_ID = 2L;
 
 	@Autowired
@@ -37,6 +39,9 @@ public class SettingsConfig {
 
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
+
+	@Autowired
+	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
 	@Bean
 	public MongoItemReader<DBObject> settingsReader() {
@@ -110,36 +115,35 @@ public class SettingsConfig {
 				List<Object[]> params = ((BasicDBList) github.get("scope")).stream()
 						.map(scope -> new Object[] { "github", scope })
 						.collect(Collectors.toList());
-				jdbcTemplate.update("INSERT INTO oauth_registration_scope (oauth_registration_fk, scope) VALUES (?, ?)", params);
+				jdbcTemplate.batchUpdate("INSERT INTO oauth_registration_scope (oauth_registration_fk, scope) VALUES (?, ?)", params);
 			}
 		}
 	}
 
 	private void writeServerSettings(DBObject item) {
-		Boolean analytics = (Boolean) ((DBObject) item.get("analyticsDetails")).get("all");
+		Boolean analytics = (Boolean) ((DBObject) ((DBObject) item.get("analyticsDetails")).get("all")).get("enabled");
 		List<Object[]> objects = new ArrayList<>();
 		objects.add(new Object[] { "server.analytics.all", analytics });
 		objects.add(new Object[] { "server.details.instance", item.get("instanceId") });
-		jdbcTemplate.update(INSERT_SERVER_SETTINGS, objects);
+		jdbcTemplate.batchUpdate(INSERT_SERVER_SETTINGS, objects);
 	}
 
 	private void writeEmailIntegration(DBObject dbObject) {
 		DBObject serverEmailDetails = (DBObject) dbObject.get("serverEmailDetails");
 		if (serverEmailDetails != null) {
 			BasicDBObject params = new BasicDBObject().append("params", serverEmailDetails);
-			jdbcTemplate.update(
-					INSERT_INTEGRATION,
-					"email server",
-					EMAIL_INTEGRAION_ID,
-					serverEmailDetails.get("enabled"),
-					params.toString(),
-					serverEmailDetails.get("username")
-			);
+			MapSqlParameterSource paramsSource = new MapSqlParameterSource();
+			paramsSource.addValue("nm", "email server");
+			paramsSource.addValue("tp", EMAIL_INTEGRAION_ID);
+			paramsSource.addValue("en", serverEmailDetails.get("enabled"));
+			paramsSource.addValue("par", params.toString());
+			paramsSource.addValue("cr", serverEmailDetails.get("username"));
+			namedParameterJdbcTemplate.update(INSERT_INTEGRATION, paramsSource);
 		}
 	}
 
 	@Bean
-	public Step migratePreferencesStep() {
+	public Step migrateSettingsStep() {
 		return stepBuilderFactory.get("settings").<DBObject, DBObject>chunk(1).reader(settingsReader())
 				.processor(settingsProcessor())
 				.writer(settingsWriter())

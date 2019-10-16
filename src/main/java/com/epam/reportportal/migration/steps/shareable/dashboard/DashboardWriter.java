@@ -22,8 +22,8 @@ public class DashboardWriter implements ItemWriter<DBObject> {
 	private static final String INSERT_DASHBOARD = "INSERT INTO dashboard (id, name, description, creation_date) VALUES (?,?,?,?)";
 
 	private static final String INSERT_WIDGET_DASHBOARD =
-			"INSERT INTO dashboard_widget (dashboard_id, widget_id, widget_name, widget_owner, "
-					+ "widget_type, widget_width, widget_height, widget_position_x, widget_position_y, is_created_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)";
+			"INSERT INTO dashboard_widget (dashboard_id, widget_id, widget_name, widget_owner, share, "
+					+ "widget_type, widget_width, widget_height, widget_position_x, widget_position_y, is_created_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)";
 
 	@Autowired
 	private ShareableWriter shareableWriter;
@@ -48,8 +48,8 @@ public class DashboardWriter implements ItemWriter<DBObject> {
 	private List<Object[]> prepareWidgetsSqlParams(BasicDBList widgets, Long dashboardId) {
 		List<Object[]> params = new ArrayList<>(widgets.size());
 		widgets.stream().map(DBObject.class::cast).forEach(widget -> {
-			params.add(new Object[] { dashboardId, widget.get("postgresId"), widget.get("name"), widget.get("owner"), widget.get("type"),
-					((BasicDBList) widget.get("widgetSize")).get(0), ((BasicDBList) widget.get("widgetSize")).get(1),
+			params.add(new Object[] { dashboardId, widget.get("postgresId"), widget.get("name"), widget.get("owner"), widget.get("shared"),
+					widget.get("type"), ((BasicDBList) widget.get("widgetSize")).get(0), ((BasicDBList) widget.get("widgetSize")).get(1),
 					((BasicDBList) widget.get("widgetPosition")).get(0), ((BasicDBList) widget.get("widgetPosition")).get(1) });
 		});
 		return params;

@@ -33,8 +33,8 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
 	private static final String INSERT_ITEM = "INSERT INTO test_item (uuid, name, type, start_time, description, last_modified,"
-			+ "unique_id, has_children, has_retries, parent_id, launch_id) VALUES (:uid, :nm, :tp::TEST_ITEM_TYPE_ENUM,"
-			+ ":st, :descr, :lm, :uq, :ch, :rtr, :par, :lid) RETURNING item_id";
+			+ "unique_id, has_children, has_retries, parent_id, launch_id, test_case_id) VALUES (:uid, :nm, :tp::TEST_ITEM_TYPE_ENUM,"
+			+ ":st, :descr, :lm, :uq, :ch, :rtr, :par, :lid, :tci) RETURNING item_id";
 
 	private static final String INSERT_RETRY_ITEM = "INSERT INTO test_item (uuid, name, type, start_time, description, last_modified,"
 			+ "unique_id, has_children, parent_id, retry_of) VALUES (:uid, :nm, :tp::TEST_ITEM_TYPE_ENUM,"

@@ -24,6 +24,7 @@ public class TestProviderUtils {
 		parameterSource.addValue("descr", item.get("itemDescription"));
 		parameterSource.addValue("lm", toUtc((Date) item.get("last_modified")));
 		parameterSource.addValue("uq", item.get("uniqueId"));
+		parameterSource.addValue("tci", item.get("uniqueId").hashCode());
 		parameterSource.addValue("ch", item.get("has_childs"));
 		parameterSource.addValue("par", item.get("parentId"));
 		return parameterSource;
@@ -38,6 +39,7 @@ public class TestProviderUtils {
 		parameterSource.addValue("descr", item.get("itemDescription"));
 		parameterSource.addValue("lm", toUtc((Date) item.get("last_modified")));
 		parameterSource.addValue("uq", item.get("uniqueId"));
+		parameterSource.addValue("tci", item.get("uniqueId").hashCode());
 		parameterSource.addValue("ch", item.get("has_childs"));
 		BasicDBList retries = (BasicDBList) item.get("retries");
 		if (!CollectionUtils.isEmpty(retries)) {

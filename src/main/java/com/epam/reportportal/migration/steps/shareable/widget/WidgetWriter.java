@@ -264,6 +264,7 @@ public class WidgetWriter implements ItemWriter<DBObject> {
 		mongoTemplate.upsert(Query.query(Criteria.where("_id").is(new ObjectId(widget.get("_id").toString()))),
 				Update.update("postgresId", entityId)
 						.set("name", widget.get("name"))
+						.set("share", widget.get("shared"))
 						.set("owner", ((DBObject) widget.get("acl")).get("ownerUserId"))
 						.set("type", TYPE_MAPPING.get(((DBObject) widget.get("contentOptions")).get("gadgetType"))),
 				"widgetMapping"
