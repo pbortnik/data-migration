@@ -47,11 +47,13 @@ public class DashboardWriter implements ItemWriter<DBObject> {
 
 	private List<Object[]> prepareWidgetsSqlParams(BasicDBList widgets, Long dashboardId) {
 		List<Object[]> params = new ArrayList<>(widgets.size());
-		widgets.stream().map(DBObject.class::cast).forEach(widget -> {
-			params.add(new Object[] { dashboardId, widget.get("postgresId"), widget.get("name"), widget.get("owner"), widget.get("shared"),
-					widget.get("type"), ((BasicDBList) widget.get("widgetSize")).get(0), ((BasicDBList) widget.get("widgetSize")).get(1),
-					((BasicDBList) widget.get("widgetPosition")).get(0), ((BasicDBList) widget.get("widgetPosition")).get(1) });
-		});
+		widgets.stream()
+				.map(DBObject.class::cast)
+				.filter(it -> it.containsField("postgresId"))
+				.forEach(widget -> params.add(new Object[] { dashboardId, widget.get("postgresId"), widget.get("name"), widget.get("owner"),
+						widget.get("share"), widget.get("type"), ((BasicDBList) widget.get("widgetSize")).get(0),
+						((BasicDBList) widget.get("widgetSize")).get(1), ((BasicDBList) widget.get("widgetPosition")).get(0),
+						((BasicDBList) widget.get("widgetPosition")).get(1) }));
 		return params;
 	}
 

@@ -18,9 +18,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.migration.steps.shareable.widget.WidgetStepConfig.*;
@@ -58,6 +56,9 @@ public class WidgetWriter implements ItemWriter<DBObject> {
 	public void write(List<? extends DBObject> items) {
 		Map<String, Long> filterMapping = cacheableDataService.loadFilterIdsMapping(items.stream()
 				.map(it -> it.get("applyingFilterId"))
+				.filter(Objects::nonNull)
+				.map(String.class::cast)
+				.filter(it -> ObjectId.isValid(it))
 				.map(id -> new ObjectId((String) id))
 				.collect(Collectors.toSet()));
 
@@ -252,12 +253,15 @@ public class WidgetWriter implements ItemWriter<DBObject> {
 	}
 
 	private List<Object[]> contentFieldsSqlSources(Long widgetId, BasicDBList contentFields) {
-		return contentFields.stream().map(cf -> CF_MAPPING.getOrDefault(cf, (String) cf)).map(cf -> {
-			if (cf.startsWith("statistics")) {
-				return cf.toLowerCase();
-			}
-			return cf;
-		}).map(cf -> new Object[] { widgetId, cf }).collect(Collectors.toList());
+		if (contentFields != null) {
+			return contentFields.stream().map(cf -> CF_MAPPING.getOrDefault(cf, (String) cf)).map(cf -> {
+				if (cf.startsWith("statistics")) {
+					return cf.toLowerCase();
+				}
+				return cf;
+			}).map(cf -> new Object[] { widgetId, cf }).collect(Collectors.toList());
+		}
+		return Collections.emptyList();
 	}
 
 	private void storeIdsMapping(DBObject widget, Long entityId) {

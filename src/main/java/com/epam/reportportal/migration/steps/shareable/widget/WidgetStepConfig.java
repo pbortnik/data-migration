@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -86,7 +85,7 @@ public class WidgetStepConfig {
 
 	static Long ACL_CLASS;
 
-	private static final int CHUNK_SIZE = 1000;
+	private static final int CHUNK_SIZE = 100;
 
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
@@ -97,8 +96,6 @@ public class WidgetStepConfig {
 	@Autowired
 	private ChunkListener chunkCountListener;
 
-	@Autowired
-	private ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
@@ -136,7 +133,6 @@ public class WidgetStepConfig {
 				.processor(widgetProcessor())
 				.writer(widgetWriter)
 				.listener(chunkCountListener)
-				.taskExecutor(threadPoolTaskExecutor)
 				.build();
 	}
 

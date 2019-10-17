@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.CollectionUtils;
@@ -46,9 +45,6 @@ public class PreferencesConfig {
 	@Autowired
 	@Qualifier("chunkCountListener")
 	private ChunkListener chunkCountListener;
-
-	@Autowired
-	private TaskExecutor threadPoolTaskExecutor;
 
 	@Autowired
 	private CacheableDataService cacheableDataService;
@@ -96,7 +92,7 @@ public class PreferencesConfig {
 		return items.stream().flatMap(it -> {
 			BasicDBList filters = (BasicDBList) ((DBObject) it.get("launchTabs")).get("filters");
 			if (!CollectionUtils.isEmpty(filters)) {
-				return filters.stream().map(filterId -> {
+				return filters.stream().filter(id -> filterIdsMapping.containsKey(id)).map(filterId -> {
 					Object[] parms = { it.get("projectId"), it.get("userId"), filterIdsMapping.get(filterId) };
 					return parms;
 				}).collect(Collectors.toList()).stream();
@@ -111,7 +107,6 @@ public class PreferencesConfig {
 				.processor(preferencesProcessor())
 				.writer(preferencesWriter())
 				.listener(chunkCountListener)
-				.taskExecutor(threadPoolTaskExecutor)
 				.build();
 	}
 
