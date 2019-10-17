@@ -1,11 +1,16 @@
 spring:
   data:
     mongodb:
-      host: dev.epm-rpp.projects.epam.com
-      port: 27017
-      database: reportportal
+      host: ${rp.mongodb.host}
+      port: ${rp.mongodb.port}
+      database: ${rp.mongodb.database}
 
 rp:
+  mongodb:
+    host: dev.epm-rpp.projects.epam.com
+    port: 27017
+    database: reportportal
+
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     driverClassName: org.postgresql.Driver
@@ -23,14 +28,16 @@ rp:
     pass: rppass
 
   binarystore:
-    path: /Users/pavel_bortnik/data-migration/data/storage
+    path: /data/storage
+    conatiner:
+      path: /data/storage
     master:
       host: seaweed-master
       port: 9333
     minio:
       endpoint: http://play.min.io
-      accessKey: Q3AM3UQ867SPQQA43P2F
-      secretKey: zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG
+      accessKey: default
+      secretKey: default
     # could be one of [seaweed, filesystem, minio]
     type: filesystem
 
