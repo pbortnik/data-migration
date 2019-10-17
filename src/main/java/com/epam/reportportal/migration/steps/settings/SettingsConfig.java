@@ -138,7 +138,7 @@ public class SettingsConfig {
 			paramsSource.addValue("en", serverEmailDetails.get("enabled"));
 			paramsSource.addValue("par", params.toString());
 			paramsSource.addValue("cr", serverEmailDetails.get("username"));
-			namedParameterJdbcTemplate.update(INSERT_INTEGRATION, paramsSource);
+			namedParameterJdbcTemplate.queryForObject(INSERT_INTEGRATION, paramsSource, Long.class);
 		}
 	}
 

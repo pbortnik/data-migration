@@ -14,19 +14,36 @@ repositories {
 
 }
 
+task resolveDependencies {
+    doLast {
+        rootProject.allprojects { project ->
+            project.buildscript.configurations.forEach { configuration ->
+                if (configuration.isCanBeResolved()) {
+                    configuration.resolve()
+                }
+            }
+
+            project.configurations.forEach { configuration ->
+                if (configuration.isCanBeResolved()) {
+                    configuration.resolve()
+                }
+            }
+        }
+    }
+}
 
 dependencies {
-    implementation 'org.springframework.data:spring-data-mongodb:1.10.9.RELEASE'
-    implementation('org.springframework.boot:spring-boot-starter-batch:2.1.7.RELEASE')
-    implementation 'com.epam.reportportal:commons:5.0.0-BETA-2'
-    implementation 'io.minio:minio:6.0.10'
-    implementation 'org.lokra.seaweedfs:seaweedfs-client:0.7.3.RELEASE'
-    implementation 'org.apache.commons:commons-lang3:3.9'
+    compile 'org.springframework.data:spring-data-mongodb:1.10.9.RELEASE'
+    compile('org.springframework.boot:spring-boot-starter-batch:2.1.7.RELEASE')
+    compile 'com.epam.reportportal:commons:5.0.0-BETA-2'
+    compile 'io.minio:minio:6.0.10'
+    compile 'org.lokra.seaweedfs:seaweedfs-client:0.7.3.RELEASE'
+    compile 'org.apache.commons:commons-lang3:3.9'
 
     compile group: 'com.github.ben-manes.caffeine', name: 'caffeine', version: '2.8.0'
 
-    implementation('org.springframework.boot:spring-boot-starter-jdbc:2.1.7.RELEASE')
-    implementation('org.postgresql:postgresql')
+    compile('org.springframework.boot:spring-boot-starter-jdbc:2.1.7.RELEASE')
+    compile('org.postgresql:postgresql')
 
 }
 buildscript {
