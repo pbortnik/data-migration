@@ -23,14 +23,6 @@ public class JobsConfiguration {
 	private JobBuilderFactory jobBuilderFactory;
 
 	@Autowired
-	@Qualifier("migrateUsersStep")
-	private Step migrateUserStep;
-
-	@Autowired
-	@Qualifier("migrateProjectsStep")
-	private Step migrateProjectsStep;
-
-	@Autowired
 	@Qualifier("migrateBtsStep")
 	private Step migrateBtsStep;
 
@@ -66,27 +58,13 @@ public class JobsConfiguration {
 	private Step migratePreferencesStep;
 
 	@Autowired
-	private Step migrateTokensStep;
-
-	@Autowired
-	private Step migrateSettingsStep;
-
-	@Autowired
-	private Step migrateAuthStep;
-
-	@Autowired
 	private MigrationJobExecutionListener migrationJobExecutionListener;
 
 	@Bean
 	public Job job() {
-		SimpleJobBuilder job = jobBuilderFactory.get("migrationJob")
+		SimpleJobBuilder job = jobBuilderFactory.get("migrationDataJob")
 				.listener(migrationJobExecutionListener)
-				.start(migrateUserStep)
-				.next(migrateTokensStep)
-				.next(migrateProjectsStep)
-				.next(migrateSettingsStep)
-				.next(migrateAuthStep)
-				.next(migrateBtsStep)
+				.start(migrateBtsStep)
 				.next(migrateLaunchStep)
 				.next(migrateLaunchNumberStep);
 		for (Step s : levelItemsFlow) {
