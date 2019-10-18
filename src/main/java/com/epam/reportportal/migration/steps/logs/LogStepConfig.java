@@ -2,6 +2,8 @@ package com.epam.reportportal.migration.steps.logs;
 
 import com.epam.reportportal.migration.steps.utils.MigrationUtils;
 import com.mongodb.DBObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ChunkListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
@@ -29,6 +31,8 @@ import java.util.List;
  */
 @Configuration
 public class LogStepConfig {
+
+	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
 	private static final int CHUNK_SIZE = 5_000;
 
@@ -98,7 +102,9 @@ public class LogStepConfig {
 				.getIndexInfo()
 				.stream()
 				.noneMatch(it -> ((String) it.get("name")).equalsIgnoreCase("log_time"))) {
+			LOGGER.info("Adding 'log_time' index to log collection");
 			mongoTemplate.indexOps("log").ensureIndex(new Index("log_time", Sort.Direction.ASC).named("log_time"));
+			LOGGER.info("Adding 'log_time' index to log collection successfully finished");
 		}
 	}
 }
