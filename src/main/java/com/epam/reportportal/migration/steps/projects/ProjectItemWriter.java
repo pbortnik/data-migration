@@ -8,6 +8,9 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -71,7 +74,11 @@ public class ProjectItemWriter implements ItemWriter<DBObject> {
 		params.put("nm", project.get("_id"));
 		params.put("pt", ((DBObject) project.get("configuration")).get("entryType"));
 		params.put("org", project.get("customer"));
-		params.put("cd", toUtc((Date) project.get("creationDate")));
+		params.put(
+				"cd",
+				Optional.ofNullable(toUtc((Date) project.get("creationDate")))
+						.orElse(Timestamp.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)))
+		);
 		params.put("md", "{\"metadata\": {\"migrated_from\": \"MongoDb\"}}");
 		Long projectId = jdbcTemplate.queryForObject(INSERT_PROJECT, params, Long.class);
 		jdbcTemplate.update(INSERT_DEFAULT_ANALYZER_CONFIG, Collections.singletonMap("pr", projectId));
