@@ -32,7 +32,7 @@ public class DataMigrationApplication {
 	@Bean
 	// mongo uuid -> postgres id
 	public Cache<String, Object> idsCache() {
-		return Caffeine.newBuilder().initialCapacity(5_000_000).maximumSize(5_000_000).expireAfterAccess(30, TimeUnit.HOURS).build();
+		return Caffeine.newBuilder().initialCapacity(5_000).maximumSize(5_000_000).expireAfterAccess(30, TimeUnit.HOURS).build();
 	}
 
 	@Bean

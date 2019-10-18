@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.epam.reportportal.migration.steps.items.TestProviderUtils.TICKETS_SOURCE_PROVIDER;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
@@ -156,23 +155,6 @@ public class CacheableDataService {
 			}
 		}
 		return ids;
-	}
-
-	public Long retrieveTicketId(DBObject ticket) {
-		String url = (String) ticket.get("url");
-		Long ticketId = (Long) idsCache.getIfPresent(url);
-		if (ticketId == null) {
-			try {
-				ticketId = jdbcTemplate.queryForObject("SELECT id FROM ticket WHERE url = :url",
-						Collections.singletonMap("url", url),
-						Long.class
-				);
-			} catch (Exception e) {
-				ticketId = jdbcTemplate.queryForObject(INSERT_TICKET, TICKETS_SOURCE_PROVIDER.createSqlParameterSource(ticket), Long.class);
-			}
-			idsCache.put(url, ticketId);
-		}
-		return ticketId;
 	}
 
 	public Map<String, Long> loadFilterIdsMapping(Set<ObjectId> mongoIds) {
