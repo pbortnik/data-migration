@@ -12,8 +12,8 @@ rp:
     host: dev.epm-rpp.projects.epam.com
     port: 27017
     database: reportportal
-    user:
-    pass:
+    user: ${null}
+    pass: ${null}
 
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
