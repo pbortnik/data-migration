@@ -4,12 +4,16 @@ spring:
       host: ${rp.mongodb.host}
       port: ${rp.mongodb.port}
       database: ${rp.mongodb.database}
+      username: ${rp.mongodb.user}
+      password: ${rp.mongodb.pass}
 
 rp:
   mongodb:
     host: dev.epm-rpp.projects.epam.com
     port: 27017
     database: reportportal
+    user:
+    pass:
 
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
