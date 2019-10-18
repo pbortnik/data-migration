@@ -1,19 +1,13 @@
 spring:
   data:
     mongodb:
-      host: ${rp.mongodb.host}
-      port: ${rp.mongodb.port}
       database: ${rp.mongodb.database}
-      username: ${rp.mongodb.user}
-      password: ${rp.mongodb.pass}
+      uri: ${rp.mongodb.uri}
 
 rp:
   mongodb:
-    host: dev.epm-rpp.projects.epam.com
-    port: 27017
+    uri: mongodb://localhost:27017
     database: reportportal
-    user: ${null}
-    pass: ${null}
 
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
