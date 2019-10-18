@@ -3,6 +3,8 @@ package com.epam.reportportal.migration.steps.items;
 import com.epam.reportportal.migration.steps.utils.MigrationUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ChunkListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
@@ -36,6 +38,8 @@ import java.util.function.Function;
  */
 @Configuration
 public class ItemsStepConfig {
+
+	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
 	private static final int CHUNK_SIZE = 5_000;
 
@@ -123,7 +127,7 @@ public class ItemsStepConfig {
 	public MongoItemReader<DBObject> testItemReader(@Value("#{stepExecutionContext[minValue]}") Long minTime,
 			@Value("#{stepExecutionContext[maxValue]}") Long maxTime, @Value("#{stepExecutionContext[pathLevel]}") Integer i) {
 		MongoItemReader<DBObject> itemReader = MigrationUtils.getMongoItemReader(mongoTemplate, "testItem");
-		itemReader.setQuery("{$and : [ { 'path' : {$size : ?0 }}, { 'start_time': { $gte : ?1 }}, { 'start_time': { $lte : ?2 }}] }");
+		itemReader.setQuery("{$and : [ { 'pathLevel' : ?0 }, { 'start_time': { $gte : ?1 }}, { 'start_time': { $lte : ?2 }}] }");
 		itemReader.setPageSize(CHUNK_SIZE);
 		List<Object> paramValues = new LinkedList<>();
 		paramValues.add(i);
@@ -140,22 +144,28 @@ public class ItemsStepConfig {
 		);
 
 		if (null != testItem) {
+			LOGGER.info("Adding 'pathLevel' field to testItem collection");
 			mongoTemplate.aggregate(Aggregation.newAggregation(
 					context -> new BasicDBObject("$addFields", new BasicDBObject("pathLevel", new BasicDBObject("$size", "$path"))),
 					Aggregation.out("testItem")
 			), "testItem", Object.class);
+			LOGGER.info("Adding 'pathLevel' field to testItem collection successfully finished");
 		}
 
-		List<DBObject> indexInfo = mongoTemplate.getCollection("log").getIndexInfo();
+		List<DBObject> indexInfo = mongoTemplate.getCollection("testItem").getIndexInfo();
 
 		if (indexInfo.stream().noneMatch(it -> ((String) it.get("name")).equalsIgnoreCase("start_time"))) {
+			LOGGER.info("Adding 'start_time' index to testItem collection");
 			mongoTemplate.indexOps("testItem").ensureIndex(new Index("start_time", Sort.Direction.ASC).named("start_time"));
+			LOGGER.info("Adding 'start_time' index to testItem collection successfully finished");
 		}
 
 		if (indexInfo.stream().noneMatch(it -> ((String) it.get("name")).equalsIgnoreCase("start_time_path"))) {
+			LOGGER.info("Adding 'start_time_path' index to testItem collection");
 			mongoTemplate.indexOps("testItem")
 					.ensureIndex(new CompoundIndexDefinition(new BasicDBObject("start_time", 1).append("pathLevel", 1)).named(
 							"start_time_path"));
+			LOGGER.info("Adding 'start_time_path' index to testItem collection successfully finished");
 		}
 
 	}
