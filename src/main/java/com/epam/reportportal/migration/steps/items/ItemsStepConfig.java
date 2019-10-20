@@ -2,6 +2,7 @@ package com.epam.reportportal.migration.steps.items;
 
 import com.epam.reportportal.migration.steps.utils.MigrationUtils;
 import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,8 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,6 +45,8 @@ public class ItemsStepConfig {
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
 	private static final int CHUNK_SIZE = 5_000;
+
+	static String OPTIMIZED_TEST_COLLECTION = "optimizeTest";
 
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
@@ -80,7 +85,7 @@ public class ItemsStepConfig {
 
 		DBObject testItem = mongoTemplate.findOne(new Query().with(new Sort(Sort.Direction.DESC, "pathLevel")).limit(1),
 				DBObject.class,
-				"testItem"
+				OPTIMIZED_TEST_COLLECTION
 		);
 		int pathSize = (int) testItem.get("pathLevel");
 		List<Step> steps = new LinkedList<>();
@@ -126,7 +131,7 @@ public class ItemsStepConfig {
 	@StepScope
 	public MongoItemReader<DBObject> testItemReader(@Value("#{stepExecutionContext[minValue]}") Long minTime,
 			@Value("#{stepExecutionContext[maxValue]}") Long maxTime, @Value("#{stepExecutionContext[pathLevel]}") Integer i) {
-		MongoItemReader<DBObject> itemReader = MigrationUtils.getMongoItemReader(mongoTemplate, "testItem");
+		MongoItemReader<DBObject> itemReader = MigrationUtils.getMongoItemReader(mongoTemplate, ItemsStepConfig.OPTIMIZED_TEST_COLLECTION);
 		itemReader.setQuery("{$and : [ { 'pathLevel' : ?0 }, { 'start_time': { $gte : ?1 }}, { 'start_time': { $lte : ?2 }}] }");
 		itemReader.setPageSize(CHUNK_SIZE);
 		List<Object> paramValues = new LinkedList<>();
@@ -138,36 +143,46 @@ public class ItemsStepConfig {
 	}
 
 	private void prepareCollectionForMigration() {
-		DBObject testItem = mongoTemplate.findOne(new Query().addCriteria(Criteria.where("pathLevel").exists(false)).limit(1),
-				DBObject.class,
-				"testItem"
-		);
+		prepareIndexTestItemStartTime();
+		prepareOptimizedTestItemCollection();
+		prepareIndexOptimizedPath();
+	}
 
-		if (null != testItem) {
-			LOGGER.info("Adding 'pathLevel' field to testItem collection");
-			mongoTemplate.aggregate(Aggregation.newAggregation(
-					context -> new BasicDBObject("$addFields", new BasicDBObject("pathLevel", new BasicDBObject("$size", "$path"))),
-					Aggregation.out("testItem")
-			), "testItem", Object.class);
-			LOGGER.info("Adding 'pathLevel' field to testItem collection successfully finished");
+	private void prepareIndexOptimizedPath() {
+		List<DBObject> indexInfoOptimized = mongoTemplate.getCollection(OPTIMIZED_TEST_COLLECTION).getIndexInfo();
+		if (indexInfoOptimized.stream().noneMatch(it -> ((String) it.get("name")).equalsIgnoreCase("start_time_path"))) {
+			LOGGER.info("Adding 'start_time_path' index to optimizedTest collection");
+			mongoTemplate.indexOps(OPTIMIZED_TEST_COLLECTION)
+					.ensureIndex(new CompoundIndexDefinition(new BasicDBObject("start_time", 1).append("pathLevel", 1)).named(
+							"start_time_path"));
+			LOGGER.info("Adding 'start_time_path' index to optimizedTest collection successfully finished");
+		}
+	}
+
+	private void prepareOptimizedTestItemCollection() {
+		DBCollection optimizeTest = mongoTemplate.getCollection(OPTIMIZED_TEST_COLLECTION);
+		if (optimizeTest == null) {
+			mongoTemplate.createCollection(OPTIMIZED_TEST_COLLECTION);
 		}
 
-		List<DBObject> indexInfo = mongoTemplate.getCollection("testItem").getIndexInfo();
+		Date fromDate = Date.from(LocalDate.parse(keepFrom).atStartOfDay(ZoneOffset.UTC).toInstant());
 
+		LOGGER.info("Adding 'pathLevel' field to optimizeTest collection");
+		mongoTemplate.aggregate(Aggregation.newAggregation(Aggregation.match(Criteria.where("start_time").gte(fromDate)),
+				context -> new BasicDBObject("$addFields", new BasicDBObject("pathLevel", new BasicDBObject("$size", "$path"))),
+				Aggregation.out(OPTIMIZED_TEST_COLLECTION)
+		), "testItem", Object.class);
+
+		LOGGER.info("Adding 'pathLevel' field to testItem collection successfully finished");
+	}
+
+	private void prepareIndexTestItemStartTime() {
+		List<DBObject> indexInfo = mongoTemplate.getCollection("testItem").getIndexInfo();
 		if (indexInfo.stream().noneMatch(it -> ((String) it.get("name")).equalsIgnoreCase("start_time"))) {
 			LOGGER.info("Adding 'start_time' index to testItem collection");
 			mongoTemplate.indexOps("testItem").ensureIndex(new Index("start_time", Sort.Direction.ASC).named("start_time"));
 			LOGGER.info("Adding 'start_time' index to testItem collection successfully finished");
 		}
-
-		if (indexInfo.stream().noneMatch(it -> ((String) it.get("name")).equalsIgnoreCase("start_time_path"))) {
-			LOGGER.info("Adding 'start_time_path' index to testItem collection");
-			mongoTemplate.indexOps("testItem")
-					.ensureIndex(new CompoundIndexDefinition(new BasicDBObject("start_time", 1).append("pathLevel", 1)).named(
-							"start_time_path"));
-			LOGGER.info("Adding 'start_time_path' index to testItem collection successfully finished");
-		}
-
 	}
 
 }
