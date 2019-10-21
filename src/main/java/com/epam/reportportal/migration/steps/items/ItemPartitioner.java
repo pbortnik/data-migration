@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.epam.reportportal.migration.steps.utils.DatePartitioner.prepareExecutionContext;
 
@@ -30,25 +31,29 @@ public class ItemPartitioner implements Partitioner {
 		Date fromDate = Date.from(LocalDate.parse(keepFrom).atStartOfDay(ZoneOffset.UTC).toInstant());
 		Date minDate = new Date();
 		Date maxDate = new Date();
+		AtomicReference firstId = new AtomicReference();
+		AtomicReference latestId = new AtomicReference();
 
-		mongoOperations.executeQuery(
-				Query.query(Criteria.where("start_time").gte(fromDate).and("pathLevel").is(pathLevel))
-						.with(new Sort(Sort.Direction.ASC, "start_time"))
-						.limit(1),
-				ItemsStepConfig.OPTIMIZED_TEST_COLLECTION,
-				dbObject -> minDate.setTime(((Date) dbObject.get("start_time")).getTime())
-		);
+		mongoOperations.executeQuery(Query.query(Criteria.where("start_time").gte(fromDate).and("pathLevel").is(pathLevel))
+				.with(new Sort(Sort.Direction.ASC, "start_time"))
+				.limit(1), ItemsStepConfig.OPTIMIZED_TEST_COLLECTION, dbObject -> {
+			minDate.setTime(((Date) dbObject.get("start_time")).getTime());
+			firstId.set(dbObject.get("_id"));
+		});
 
-		mongoOperations.executeQuery(
-				Query.query(Criteria.where("start_time").gte(fromDate).and("pathLevel").is(pathLevel))
-						.with(new Sort(Sort.Direction.DESC, "start_time"))
-						.limit(1),
-				ItemsStepConfig.OPTIMIZED_TEST_COLLECTION,
-				dbObject -> maxDate.setTime(((Date) dbObject.get("start_time")).getTime())
-		);
+		mongoOperations.executeQuery(Query.query(Criteria.where("start_time").gte(fromDate).and("pathLevel").is(pathLevel))
+				.with(new Sort(Sort.Direction.DESC, "start_time"))
+				.limit(1), ItemsStepConfig.OPTIMIZED_TEST_COLLECTION, dbObject -> {
+			maxDate.setTime(((Date) dbObject.get("start_time")).getTime());
+			latestId.set(dbObject.get("_id"));
+		});
 
 		Map<String, ExecutionContext> result = prepareExecutionContext(gridSize, minDate, maxDate);
-		result.values().forEach(context -> context.putInt("pathLevel", pathLevel));
+		result.values().forEach(context -> {
+			context.putInt("pathLevel", pathLevel);
+			context.put("firstId", firstId.get());
+			context.put("latestId", latestId.get());
+		});
 		return result;
 	}
 

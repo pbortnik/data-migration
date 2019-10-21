@@ -1,9 +1,10 @@
 package com.epam.reportportal.migration.steps.items;
 
-import com.epam.reportportal.migration.steps.utils.MigrationUtils;
+import com.epam.reportportal.migration.seek.MongoSeekItemReader;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ChunkListener;
@@ -12,7 +13,6 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +32,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
@@ -120,20 +121,30 @@ public class ItemsStepConfig {
 	@Bean
 	@Scope(BeanDefinition.SCOPE_PROTOTYPE)
 	public Step slaveItemStep(int i) {
-		return stepBuilderFactory.get("slaveItemStep." + i).<DBObject, DBObject>chunk(CHUNK_SIZE).reader(testItemReader(null, null, null))
-				.processor(testItemProcessor)
-				.writer(testItemWriter)
-				.listener(chunkCountListener)
-				.build();
+		return stepBuilderFactory.get("slaveItemStep." + i).<DBObject, DBObject>chunk(CHUNK_SIZE).reader(testItemReader(null,
+				null,
+				null,
+				null,
+				null
+		)).processor(testItemProcessor).writer(testItemWriter).listener(chunkCountListener).build();
 	}
 
 	@Bean
 	@StepScope
-	public MongoItemReader<DBObject> testItemReader(@Value("#{stepExecutionContext[minValue]}") Long minTime,
-			@Value("#{stepExecutionContext[maxValue]}") Long maxTime, @Value("#{stepExecutionContext[pathLevel]}") Integer i) {
-		MongoItemReader<DBObject> itemReader = MigrationUtils.getMongoItemReader(mongoTemplate, ItemsStepConfig.OPTIMIZED_TEST_COLLECTION);
+	public MongoSeekItemReader<DBObject> testItemReader(@Value("#{stepExecutionContext[minValue]}") Long minTime,
+			@Value("#{stepExecutionContext[maxValue]}") Long maxTime, @Value("#{stepExecutionContext[pathLevel]}") Integer i,
+			@Value("#{stepExecutionContext[firstId]}") ObjectId firstId, @Value("#{stepExecutionContext[latestId]}") ObjectId latestId) {
+		MongoSeekItemReader<DBObject> itemReader = new MongoSeekItemReader<>();
+		itemReader.setTemplate(mongoTemplate);
+		itemReader.setTargetType(DBObject.class);
+		itemReader.setCollection(ItemsStepConfig.OPTIMIZED_TEST_COLLECTION);
+		itemReader.setCurrentObjectId(firstId);
+		itemReader.setLatestObjectId(latestId);
+		itemReader.setSort(new HashMap<String, Sort.Direction>() {{
+			put("_id", Sort.Direction.ASC);
+		}});
 		itemReader.setQuery("{$and : [ { 'pathLevel' : ?0 }, { 'start_time': { $gte : ?1 }}, { 'start_time': { $lte : ?2 }}] }");
-		itemReader.setPageSize(CHUNK_SIZE);
+		itemReader.setLimit(CHUNK_SIZE);
 		List<Object> paramValues = new LinkedList<>();
 		paramValues.add(i);
 		paramValues.add(new Date(minTime));

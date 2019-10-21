@@ -35,4 +35,28 @@ public class DatePartitioner {
 		return result;
 	}
 
+	public static Map<String, ExecutionContext> prepareExecutionContext(int gridSize, Date minDate, Date maxDate, String id) {
+		long targetSize = (maxDate.getTime() - minDate.getTime()) / gridSize + 1;
+		Map<String, ExecutionContext> result = new HashMap<>();
+		int number = 0;
+		long start = minDate.getTime();
+		long end = start + targetSize - 1;
+
+		while (start <= maxDate.getTime()) {
+			ExecutionContext value = new ExecutionContext();
+			result.put("partition" + number, value);
+
+			if (end >= maxDate.getTime()) {
+				end = maxDate.getTime();
+			}
+			value.putLong("minValue", start);
+			value.putLong("maxValue", end);
+			value.putString("object", id);
+			start += targetSize;
+			end += targetSize;
+			number++;
+		}
+
+		return result;
+	}
 }
