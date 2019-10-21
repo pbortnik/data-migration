@@ -157,6 +157,12 @@ public class ItemsStepConfig {
 							"start_time_path"));
 			LOGGER.info("Adding 'start_time_path' index to optimizedTest collection successfully finished");
 		}
+		if (indexInfoOptimized.stream().noneMatch(it -> ((String) it.get("name")).equalsIgnoreCase("pathLevel_1"))) {
+			LOGGER.info("Adding 'pathLevel_1' index to optimizedTest collection");
+			mongoTemplate.indexOps(OPTIMIZED_TEST_COLLECTION).ensureIndex(new Index("pathLevel", Sort.Direction.ASC).named("pathLevel_1"));
+			LOGGER.info("Adding 'pathLevel_1' index to optimizedTest collection successfully finished");
+		}
+
 	}
 
 	private void prepareOptimizedTestItemCollection() {
