@@ -180,6 +180,8 @@ public class ItemsStepConfig {
 		DBCollection optimizeTest = mongoTemplate.getCollection(OPTIMIZED_TEST_COLLECTION);
 		if (optimizeTest == null) {
 			mongoTemplate.createCollection(OPTIMIZED_TEST_COLLECTION);
+		} else {
+			return;
 		}
 
 		Date fromDate = Date.from(LocalDate.parse(keepFrom).atStartOfDay(ZoneOffset.UTC).toInstant());
