@@ -64,17 +64,17 @@ public class JobsConfiguration {
 	public Job job() {
 		SimpleJobBuilder job = jobBuilderFactory.get("migrationDataJob")
 				.listener(migrationJobExecutionListener)
-				.start(migrateBtsStep);
-//				.next(migrateLaunchStep)
-//				.next(migrateLaunchNumberStep);
+				.start(migrateBtsStep)
+				.next(migrateLaunchStep)
+				.next(migrateLaunchNumberStep);
 		for (Step s : levelItemsFlow) {
 			job = job.next(s);
 		}
-//		job.next(migrateLogStep);
-//		job.next(migrateFilterStep);
-//		job.next(migrateWidgetStep);
-//		job.next(migrateDashboardStep);
-//		job.next(migratePreferencesStep);
+		job.next(migrateLogStep);
+		job.next(migrateFilterStep);
+		job.next(migrateWidgetStep);
+		job.next(migrateDashboardStep);
+		job.next(migratePreferencesStep);
 		return job.build();
 	}
 
