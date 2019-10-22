@@ -66,7 +66,7 @@ public class DataMigrationApplication {
 	public ThreadPoolTaskExecutor taskExecutor() {
 		ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
 		threadPoolTaskExecutor.setCorePoolSize(12);
-		threadPoolTaskExecutor.setMaxPoolSize(27);
+		threadPoolTaskExecutor.setMaxPoolSize(12);
 		return threadPoolTaskExecutor;
 	}
 
