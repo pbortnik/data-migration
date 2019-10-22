@@ -128,13 +128,11 @@ public class ItemsStepConfig {
 
 	private ObjectId findStartId(Integer pathLevel) {
 		Query query = Query.query(Criteria.where("pathLevel").is(pathLevel)).with(new Sort(Sort.Direction.ASC, "_id")).limit(1);
-		query.fields().include("_id");
 		return (ObjectId) mongoTemplate.findOne(query, DBObject.class, OPTIMIZED_TEST_COLLECTION).get("_id");
 	}
 
 	private ObjectId findLastId(Integer pathLevel) {
 		Query query = Query.query(Criteria.where("pathLevel").is(pathLevel)).with(new Sort(Sort.Direction.DESC, "_id")).limit(1);
-		query.fields().include("_id");
 		return (ObjectId) mongoTemplate.findOne(query, DBObject.class, OPTIMIZED_TEST_COLLECTION).get("_id");
 	}
 
