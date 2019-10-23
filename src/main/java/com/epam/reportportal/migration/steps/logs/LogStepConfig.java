@@ -119,9 +119,9 @@ public class LogStepConfig {
 		if (mongoTemplate.getCollection("log")
 				.getIndexInfo()
 				.stream()
-				.noneMatch(it -> ((String) it.get("name")).equalsIgnoreCase("log_time"))) {
+				.noneMatch(it -> ((String) it.get("name")).equalsIgnoreCase("logTime"))) {
 			LOGGER.info("Adding 'log_time' index to log collection");
-			mongoTemplate.indexOps("log").ensureIndex(new Index("log_time", Sort.Direction.ASC).named("log_time"));
+			mongoTemplate.indexOps("log").ensureIndex(new Index("logTime", Sort.Direction.ASC).named("logTime"));
 			LOGGER.info("Adding 'log_time' index to log collection successfully finished");
 		}
 	}
