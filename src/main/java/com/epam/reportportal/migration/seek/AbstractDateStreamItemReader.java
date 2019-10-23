@@ -17,9 +17,15 @@ public abstract class AbstractDateStreamItemReader<T> extends AbstractItemStream
 	private static final String OBJECT_ID = "object.date";
 	private static final String OBJECT_LATEST_ID = "object.latest.date";
 
+	private String dateField;
+
 	private Date latestDate;
 
 	private Date currentDate;
+
+	public void setDateField(String dateField) {
+		this.dateField = dateField;
+	}
 
 	/**
 	 * Read next item from input.
@@ -74,7 +80,7 @@ public abstract class AbstractDateStreamItemReader<T> extends AbstractItemStream
 		}
 		T t = doRead();
 		if (t instanceof DBObject) {
-			currentDate = (Date) ((DBObject) t).get("start_time");
+			currentDate = (Date) ((DBObject) t).get(dateField);
 		}
 		return t;
 	}

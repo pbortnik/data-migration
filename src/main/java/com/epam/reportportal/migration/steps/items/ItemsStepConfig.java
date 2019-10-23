@@ -108,8 +108,8 @@ public class ItemsStepConfig {
 
 	@Bean
 	@Scope(BeanDefinition.SCOPE_PROTOTYPE)
-	public ItemPartitioner partitioner(Integer i, DBObject minObject, DBObject maxObject) {
-		ItemPartitioner partitioner = new ItemPartitioner();
+	public DatePartitioner partitioner(Integer i, DBObject minObject, DBObject maxObject) {
+		DatePartitioner partitioner = new DatePartitioner();
 		partitioner.setPathLevel(i);
 		partitioner.setMinDate((Date) minObject.get("start_time"));
 		partitioner.setMaxDate((Date) maxObject.get("start_time"));
@@ -138,6 +138,7 @@ public class ItemsStepConfig {
 			put("start_time", Sort.Direction.ASC);
 		}});
 		itemReader.setLimit(CHUNK_SIZE);
+		itemReader.setDateField("start_time");
 		itemReader.setCurrentDate(new Date(minTime));
 		itemReader.setLatestDate(new Date(maxTime));
 		itemReader.setQuery("{$and : [ {start_time : {$gte : ?1}}, {'pathLevel' : ?0}]}");

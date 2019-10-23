@@ -11,7 +11,7 @@ import static com.epam.reportportal.migration.steps.utils.DatePartitioner.prepar
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
-public class ItemPartitioner implements Partitioner {
+public class DatePartitioner implements Partitioner {
 
 	private Date minDate;
 

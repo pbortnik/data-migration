@@ -31,15 +31,15 @@ import static com.epam.reportportal.migration.steps.utils.MigrationUtils.toUtc;
 public class LogWriter implements ItemWriter<DBObject> {
 
 	private static final String INSERT_LOG = "INSERT INTO log (uuid, log_time, log_message, item_id, last_modified, log_level) "
-			+ "VALUES (:uid, :lt, :lmsg, :item, :lm, :ll)";
+			+ "VALUES (:uid, :lt, :lmsg, :item, :lm, :ll) ON CONFLICT DO NOTHING";
 
 	private static final String INSERT_LOG_WITH_ATTACH =
 			"INSERT INTO log (uuid, log_time, log_message, item_id, last_modified, log_level, attachment_id) "
-					+ "VALUES (:uid, :lt, :lmsg, :item, :lm, :ll, :attachId)";
+					+ "VALUES (:uid, :lt, :lmsg, :item, :lm, :ll, :attachId) ON CONFLICT DO NOTHING";
 
 	private static final String INSERT_ATTACH =
 			"INSERT INTO attachment (file_id, thumbnail_id, content_type, project_id, launch_id, item_id) "
-					+ "VALUES (:fid, :tid, :ct, :pr, :lnch, :item) RETURNING id";
+					+ "VALUES (:fid, :tid, :ct, :pr, :lnch, :item) ON CONFLICT DO NOTHING RETURNING id";
 
 	@Autowired
 	@Qualifier("attachmentDataStoreService")
