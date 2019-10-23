@@ -7,13 +7,11 @@ import java.util.Iterator;
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
-public abstract class AbstractSeekItemReader<T> extends AbstractObjectIdItemStreamItemReader {
+public abstract class AbstractSeekItemReader<T> extends AbstractDateStreamItemReader {
 
 	protected int limit = 10;
 
 	protected Iterator<T> results;
-
-	private final Object lock = new Object();
 
 	public AbstractSeekItemReader() {
 		setName(ClassUtils.getShortName(AbstractSeekItemReader.class));
@@ -25,16 +23,13 @@ public abstract class AbstractSeekItemReader<T> extends AbstractObjectIdItemStre
 
 	@Override
 	protected T doRead() throws Exception {
-
-		synchronized (lock) {
+		if (results == null || !results.hasNext()) {
+			results = doPageRead();
 			if (results == null || !results.hasNext()) {
-				results = doPageRead();
-				if (results == null || !results.hasNext()) {
-					return null;
-				}
+				return null;
 			}
-			return results.next();
 		}
+		return results.next();
 	}
 
 	protected abstract Iterator<T> doPageRead();

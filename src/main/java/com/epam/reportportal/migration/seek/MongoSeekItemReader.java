@@ -6,7 +6,6 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.BasicQuery;
-import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
@@ -120,21 +119,11 @@ public class MongoSeekItemReader<T> extends AbstractSeekItemReader<T> implements
 	@SuppressWarnings("unchecked")
 	protected Iterator<T> doPageRead() {
 
+		parameterValues.add(1, getCurrentDate());
 		String populatedQuery = replacePlaceholders(query, parameterValues);
 
-		Query mongoQuery = null;
-
-		if (StringUtils.hasText(fields)) {
-			mongoQuery = new BasicQuery(populatedQuery, fields);
-		} else {
-			mongoQuery = new BasicQuery(populatedQuery);
-		}
-
-		mongoQuery.addCriteria(Criteria.where("_id").gt(getCurrentObjectId())).limit(limit).with(sort);
-
-		if (StringUtils.hasText(hint)) {
-			mongoQuery.withHint(hint);
-		}
+		Query mongoQuery = new BasicQuery(populatedQuery);
+		mongoQuery.limit(limit).with(sort);
 
 		if (StringUtils.hasText(collection)) {
 			return (Iterator<T>) template.find(mongoQuery, type, collection).iterator();

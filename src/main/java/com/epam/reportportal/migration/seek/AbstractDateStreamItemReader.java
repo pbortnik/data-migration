@@ -1,24 +1,25 @@
 package com.epam.reportportal.migration.seek;
 
 import com.mongodb.DBObject;
-import org.bson.types.ObjectId;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemStreamException;
 import org.springframework.batch.item.ParseException;
 import org.springframework.batch.item.UnexpectedInputException;
 import org.springframework.batch.item.support.AbstractItemStreamItemReader;
 
+import java.util.Date;
+
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
-public abstract class AbstractObjectIdItemStreamItemReader<T> extends AbstractItemStreamItemReader<T> {
+public abstract class AbstractDateStreamItemReader<T> extends AbstractItemStreamItemReader<T> {
 
-	private static final String OBJECT_ID = "object.id";
-	private static final String OBJECT_LATEST_ID = "object.latest.id";
+	private static final String OBJECT_ID = "object.date";
+	private static final String OBJECT_LATEST_ID = "object.latest.date";
 
-	private ObjectId latestObjectId;
+	private Date latestDate;
 
-	private ObjectId currentObjectId;
+	private Date currentDate;
 
 	/**
 	 * Read next item from input.
@@ -50,30 +51,30 @@ public abstract class AbstractObjectIdItemStreamItemReader<T> extends AbstractIt
 	 * @param itemIndex index of item (0 based) to jump to.
 	 * @throws Exception Allows subclasses to throw checked exceptions for interpretation by the framework
 	 */
-	protected void jumpToItem(ObjectId objectId) throws Exception {
+	protected void jumpToItem(Date date) throws Exception {
 		return;
 	}
 
-	public void setLatestObjectId(ObjectId latestObjectId) {
-		this.latestObjectId = latestObjectId;
+	public void setLatestDate(Date latestDate) {
+		this.latestDate = latestDate;
 	}
 
-	public void setCurrentObjectId(ObjectId currentObjectId) {
-		this.currentObjectId = currentObjectId;
+	public void setCurrentDate(Date currentDate) {
+		this.currentDate = currentDate;
 	}
 
-	public ObjectId getCurrentObjectId() {
-		return currentObjectId;
+	public Date getCurrentDate() {
+		return currentDate;
 	}
 
 	@Override
 	public T read() throws Exception, UnexpectedInputException, ParseException {
-		if (latestObjectId.equals(currentObjectId)) {
+		if (latestDate.getTime() <= currentDate.getTime()) {
 			return null;
 		}
 		T t = doRead();
 		if (t instanceof DBObject) {
-			currentObjectId = (ObjectId) ((DBObject) t).get("_id");
+			currentDate = (Date) ((DBObject) t).get("start_time");
 		}
 		return t;
 	}
@@ -81,7 +82,7 @@ public abstract class AbstractObjectIdItemStreamItemReader<T> extends AbstractIt
 	@Override
 	public void close() throws ItemStreamException {
 		super.close();
-		currentObjectId = null;
+		currentDate = null;
 		try {
 			doClose();
 		} catch (Exception e) {
@@ -99,25 +100,25 @@ public abstract class AbstractObjectIdItemStreamItemReader<T> extends AbstractIt
 		}
 
 		if (executionContext.containsKey(getExecutionContextKey(OBJECT_LATEST_ID))) {
-			latestObjectId = (ObjectId) executionContext.get(getExecutionContextKey(OBJECT_LATEST_ID));
+			latestDate = (Date) executionContext.get(getExecutionContextKey(OBJECT_LATEST_ID));
 		}
 
-		ObjectId objectId = null;
+		Date date = null;
 		if (executionContext.containsKey(getExecutionContextKey(OBJECT_ID))) {
-			objectId = (ObjectId) executionContext.get(getExecutionContextKey(OBJECT_ID));
-		} else if (currentObjectId != null) {
-			objectId = currentObjectId;
+			date = (Date) executionContext.get(getExecutionContextKey(OBJECT_ID));
+		} else if (currentDate != null) {
+			date = currentDate;
 		}
 
-		if (objectId != null && objectId != latestObjectId) {
+		if (date != null && date.getTime() != latestDate.getTime()) {
 			try {
-				jumpToItem(objectId);
+				jumpToItem(date);
 			} catch (Exception e) {
 				throw new ItemStreamException("Could not move to stored position on restart", e);
 			}
 		}
 
-		currentObjectId = objectId;
+		currentDate = date;
 
 	}
 

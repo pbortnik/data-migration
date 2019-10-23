@@ -65,8 +65,8 @@ public class DataMigrationApplication {
 	@Bean("threadPoolTaskExecutor")
 	public ThreadPoolTaskExecutor taskExecutor() {
 		ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
-		threadPoolTaskExecutor.setCorePoolSize(3);
-		threadPoolTaskExecutor.setMaxPoolSize(3);
+		threadPoolTaskExecutor.setCorePoolSize(8);
+		threadPoolTaskExecutor.setMaxPoolSize(8);
 		return threadPoolTaskExecutor;
 	}
 

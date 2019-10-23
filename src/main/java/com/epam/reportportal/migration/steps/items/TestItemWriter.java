@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -34,7 +35,7 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 
 	private static final String INSERT_ITEM = "INSERT INTO test_item (uuid, name, type, start_time, description, last_modified,"
 			+ "unique_id, has_children, has_retries, parent_id, launch_id, test_case_id) VALUES (:uid, :nm, :tp::TEST_ITEM_TYPE_ENUM,"
-			+ ":st, :descr, :lm, :uq, :ch, :rtr, :par, :lid, :tci) RETURNING item_id";
+			+ ":st, :descr, :lm, :uq, :ch, :rtr, :par, :lid, :tci) ON CONFLICT DO NOTHING RETURNING item_id";
 
 	private static final String INSERT_RETRY_ITEM = "INSERT INTO test_item (uuid, name, type, start_time, description, last_modified,"
 			+ "unique_id, has_children, parent_id, retry_of) VALUES (:uid, :nm, :tp::TEST_ITEM_TYPE_ENUM,"
@@ -126,7 +127,7 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 	private Long writeTestItem(DBObject item) {
 		try {
 			return jdbcTemplate.queryForObject(INSERT_ITEM, TEST_SOURCE_PROVIDER.createSqlParameterSource(item), Long.class);
-		} catch (Exception e) {
+		} catch (DataAccessException e) {
 			LOGGER.debug(String.format("Item '%s' already exists", item.get("_id").toString()));
 			return null;
 		}
