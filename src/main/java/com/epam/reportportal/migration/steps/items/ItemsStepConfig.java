@@ -100,7 +100,7 @@ public class ItemsStepConfig {
 	public Step migrateItemStep(int i, DBObject minObject, DBObject maxObject) {
 		return stepBuilderFactory.get("item." + i)
 				.partitioner("slaveItemStep." + i, partitioner(i, minObject, maxObject))
-				.gridSize(5)
+				.gridSize(1)
 				.step(slaveItemStep(i))
 				.taskExecutor(threadPoolTaskExecutor)
 				.build();

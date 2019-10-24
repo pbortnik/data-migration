@@ -6,7 +6,7 @@ spring:
 
 rp:
   mongodb:
-    uri: mongodb://localhost:27017
+    uri: mongodb://RPAdmin:Q1D2oJOM4T1@ec2-3-120-229-171.eu-central-1.compute.amazonaws.com:27017
     database: reportportal
 
   datasource:
@@ -20,7 +20,7 @@ rp:
   db:
     url: jdbc:postgresql://${rp.db.host}:${rp.db.port}/${rp.db.name}
     name: reportportal
-    host: localhost
+    host: ec2-3-120-229-171.eu-central-1.compute.amazonaws.com
     port: 5432
     user: rpuser
     pass: rppass

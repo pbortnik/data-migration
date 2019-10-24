@@ -75,6 +75,7 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 		jdbc.execute("SET session_replication_role = REPLICA;");
 		items.forEach(item -> {
 			Long itemId = writeTestItem(item);
+			cacheableDataService.putMapping(item.get("_is").toString(), itemId);
 			if (itemId != null) {
 				String path = (String) item.get("pathIds");
 				item.put("pathIds", updatePath(path, itemId));
@@ -112,7 +113,7 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 	private String updatePath(String path, Long itemId) {
 		MapSqlParameterSource parameterSource = new MapSqlParameterSource();
 		parameterSource.addValue("id", itemId);
-		String result = path;
+		String result;
 		if (!StringUtils.isEmpty(path)) {
 			result = path + "." + itemId;
 			parameterSource.addValue("path", result);
