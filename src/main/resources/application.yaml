@@ -15,7 +15,7 @@ rp:
     jdbcUrl: ${rp.db.url}
     username: ${rp.db.user}
     password: ${rp.db.pass}
-    maximumPoolSize: 12
+    maximumPoolSize: 18
 
   db:
     url: jdbc:postgresql://${rp.db.host}:${rp.db.port}/${rp.db.name}

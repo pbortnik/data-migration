@@ -75,7 +75,7 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 		jdbc.execute("SET session_replication_role = REPLICA;");
 		items.forEach(item -> {
 			Long itemId = writeTestItem(item);
-			cacheableDataService.putMapping(item.get("_is").toString(), itemId);
+			cacheableDataService.putMapping(item.get("_id").toString(), itemId);
 			if (itemId != null) {
 				String path = (String) item.get("pathIds");
 				item.put("pathIds", updatePath(path, itemId));

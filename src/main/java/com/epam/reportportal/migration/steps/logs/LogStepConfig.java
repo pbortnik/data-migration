@@ -71,7 +71,7 @@ public class LogStepConfig {
 		prepareCollectionForReading();
 		return stepBuilderFactory.get("log")
 				.partitioner("slaveLogStep", logPartitioner(findStartObject(fromDate), findLastObject(fromDate)))
-				.gridSize(5)
+				.gridSize(10)
 				.step(slaveLogStep())
 				.taskExecutor(threadPoolTaskExecutor)
 				.listener(chunkCountListener)
