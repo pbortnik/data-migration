@@ -37,30 +37,28 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
 	private static final String INSERT_ITEM = "INSERT INTO test_item (item_id, uuid, name, type, start_time, description, last_modified,"
-			+ "unique_id, has_children, has_retries, parent_id, launch_id, test_case_id) VALUES (:id, :uid, :nm, :tp::TEST_ITEM_TYPE_ENUM,"
-			+ ":st, :descr, :lm, :uq, :ch, :rtr, :par, :lid, :tci) ON CONFLICT DO NOTHING RETURNING item_id";
+			+ "unique_id, has_children, has_retries, parent_id, launch_id, test_case_id, path) VALUES (:id, :uid, :nm, :tp::TEST_ITEM_TYPE_ENUM,"
+			+ ":st, :descr, :lm, :uq, :ch, :rtr, :par, :lid, :tci, :path::LTREE) ON CONFLICT DO NOTHING";
 
 	private static final String INSERT_RETRY_ITEM =
 			"INSERT INTO test_item (item_id, uuid, name, type, start_time, description, last_modified,"
-					+ "unique_id, has_children, parent_id, retry_of) VALUES (:id, :uid, :nm, :tp::TEST_ITEM_TYPE_ENUM,"
-					+ ":st, :descr, :lm, :uq, :ch, :par, :rtrof) ON CONFLICT DO NOTHING";
-
-	private static final String UPDATE_PATH = "UPDATE test_item SET path = :path::LTREE WHERE item_id = :id";
+					+ "unique_id, has_children, parent_id, retry_of, path) VALUES (:id, :uid, :nm, :tp::TEST_ITEM_TYPE_ENUM,"
+					+ ":st, :descr, :lm, :uq, :ch, :par, :rtrof, :path::LTREE) ON CONFLICT DO NOTHING";
 
 	private static final String INSERT_ITEM_RESULTS = "INSERT INTO test_item_results (result_id, status, end_time, duration) VALUES "
-			+ "(:id, :st::STATUS_ENUM, :ed, EXTRACT(EPOCH FROM (:ed::TIMESTAMP - :stime::TIMESTAMP)))";
+			+ "(:id, :st::STATUS_ENUM, :ed, EXTRACT(EPOCH FROM (:ed::TIMESTAMP - :stime::TIMESTAMP))) ON CONFLICT DO NOTHING";
 
-	private static final String INSERT_ITEM_STATISTICS = "INSERT INTO statistics (s_counter, item_id, statistics_field_id) VALUES (:ct, :id, :sfi)";
+	private static final String INSERT_ITEM_STATISTICS = "INSERT INTO statistics (s_counter, item_id, statistics_field_id) VALUES (:ct, :id, :sfi) ON CONFLICT DO NOTHING";
 
-	private static final String INSERT_ITEM_ATTRIBUTES = "INSERT INTO item_attribute (value, item_id) VALUES (:val, :id)";
+	private static final String INSERT_ITEM_ATTRIBUTES = "INSERT INTO item_attribute (value, item_id) VALUES (:val, :id) ON CONFLICT DO NOTHING";
 
-	private static final String INSERT_ITEM_PARAMETERS = "INSERT INTO parameter (key, value, item_id) VALUES (:key, :val, :id)";
+	private static final String INSERT_ITEM_PARAMETERS = "INSERT INTO parameter (key, value, item_id) VALUES (:key, :val, :id) ON CONFLICT DO NOTHING";
 
 	private static final String INSERT_ISSUE =
 			"INSERT INTO issue (issue_id, issue_type, issue_description, auto_analyzed, ignore_analyzer) "
-					+ "VALUES (:id, :loc, :descr, :aa, :iga)";
+					+ "VALUES (:id, :loc, :descr, :aa, :iga) ON CONFLICT DO NOTHING";
 
-	private static final String INSERT_TICKET_ISSUE = "INSERT INTO issue_ticket (issue_id, ticket_id) VALUES (:id, :tid)";
+	private static final String INSERT_TICKET_ISSUE = "INSERT INTO issue_ticket (issue_id, ticket_id) VALUES (:id, :tid) ON CONFLICT DO NOTHING";
 
 	@Autowired
 	private JdbcTemplate jdbc;
@@ -95,11 +93,11 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 
 			Long currentId = atomicCurrentId.getAndIncrement();
 
-			testItemSrc.add(getTestItemParams(item, currentId));
-			cacheableDataService.putMapping(item.get("_id").toString(), currentId);
-
 			String path = (String) item.get("pathIds");
 			item.put("pathIds", updatePath(path, currentId));
+
+			testItemSrc.add(getTestItemParams(item, currentId, path));
+			cacheableDataService.putMapping(item.get("_id").toString(), currentId);
 
 			itemResultsSrc.add(getItemResults(item, currentId));
 			statisticsSrc.addAll(commonItemWriter.getStatisticsParams((DBObject) item.get("statistics"), currentId));
@@ -140,7 +138,8 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 			sqlParameterSource.addValue("par", mainItem.get("parentId"));
 			sqlParameterSource.addValue("rtrof", mainItemId);
 
-			updatePath((String) mainItem.get("pathIds"), currentId);
+			String path = updatePath((String) mainItem.get("pathIds"), currentId);
+			sqlParameterSource.addValue("path", path);
 
 			results.add(getItemResults(retry, currentId));
 			tags.addAll(commonItemWriter.getAttributes((BasicDBList) retry.get("tags"), currentId));
@@ -160,12 +159,12 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 			result = String.valueOf(itemId);
 			parameterSource.addValue("path", result);
 		}
-		jdbcTemplate.update(UPDATE_PATH, parameterSource);
 		return result;
 	}
 
-	private SqlParameterSource getTestItemParams(DBObject item, Long id) {
+	private SqlParameterSource getTestItemParams(DBObject item, Long id, String path) {
 		MapSqlParameterSource sqlParameterSource = (MapSqlParameterSource) TEST_SOURCE_PROVIDER.createSqlParameterSource(item);
+		sqlParameterSource.addValue("path", path);
 		sqlParameterSource.addValue("id", id);
 		return sqlParameterSource;
 	}
