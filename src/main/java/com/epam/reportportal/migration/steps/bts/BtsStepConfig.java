@@ -95,8 +95,12 @@ public class BtsStepConfig {
 			item.removeField("fields");
 
 			BasicDBObject params = new BasicDBObject("params", item);
+			Long externalSystemType = btsIdMapping().get(((String) item.get("externalSystemType")).toLowerCase());
+			if (externalSystemType == null) {
+				return null;
+			}
 			return new BasicDBObject("params", params).append("projectId", projectId)
-					.append("integrationId", btsIdMapping().get(((String) item.get("externalSystemType")).toLowerCase()))
+					.append("integrationId", externalSystemType)
 					.append("username", item.get("username"))
 
 					.append("project", ((String) item.get("project")).toLowerCase());
