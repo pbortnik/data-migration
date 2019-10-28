@@ -38,12 +38,12 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 
 	private static final String INSERT_ITEM = "INSERT INTO test_item (item_id, uuid, name, type, start_time, description, last_modified,"
 			+ "unique_id, has_children, has_retries, parent_id, launch_id, test_case_id, path) VALUES (:id, :uid, :nm, :tp::TEST_ITEM_TYPE_ENUM,"
-			+ ":st, :descr, :lm, :uq, :ch, :rtr, :par, :lid, :tci, :path::LTREE) ON CONFLICT DO NOTHING";
+			+ ":st, :descr, :lm, :uq, :ch, :rtr, :par, :lid, :tci, :pth::LTREE) ON CONFLICT DO NOTHING";
 
 	private static final String INSERT_RETRY_ITEM =
 			"INSERT INTO test_item (item_id, uuid, name, type, start_time, description, last_modified,"
 					+ "unique_id, has_children, parent_id, retry_of, path) VALUES (:id, :uid, :nm, :tp::TEST_ITEM_TYPE_ENUM,"
-					+ ":st, :descr, :lm, :uq, :ch, :par, :rtrof, :path::LTREE) ON CONFLICT DO NOTHING";
+					+ ":st, :descr, :lm, :uq, :ch, :par, :rtrof, :pth::LTREE) ON CONFLICT DO NOTHING";
 
 	private static final String INSERT_ITEM_RESULTS = "INSERT INTO test_item_results (result_id, status, end_time, duration) VALUES "
 			+ "(:id, :st::STATUS_ENUM, :ed, EXTRACT(EPOCH FROM (:ed::TIMESTAMP - :stime::TIMESTAMP))) ON CONFLICT DO NOTHING";
@@ -92,9 +92,7 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 		items.forEach(item -> {
 
 			Long currentId = atomicCurrentId.getAndIncrement();
-
-			String path = (String) item.get("pathIds");
-			item.put("pathIds", updatePath(path, currentId));
+			String path = getPath((String) item.get("pathIds"), currentId);
 
 			testItemSrc.add(getTestItemParams(item, currentId, path));
 			cacheableDataService.putMapping(item.get("_id").toString(), currentId);
@@ -138,8 +136,8 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 			sqlParameterSource.addValue("par", mainItem.get("parentId"));
 			sqlParameterSource.addValue("rtrof", mainItemId);
 
-			String path = updatePath((String) mainItem.get("pathIds"), currentId);
-			sqlParameterSource.addValue("path", path);
+			String path = getPath((String) mainItem.get("pathIds"), currentId);
+			sqlParameterSource.addValue("pth", path);
 
 			results.add(getItemResults(retry, currentId));
 			tags.addAll(commonItemWriter.getAttributes((BasicDBList) retry.get("tags"), currentId));
@@ -148,23 +146,19 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 		});
 	}
 
-	private String updatePath(String path, Long itemId) {
-		MapSqlParameterSource parameterSource = new MapSqlParameterSource();
-		parameterSource.addValue("id", itemId);
+	private String getPath(String path, Long itemId) {
 		String result;
 		if (!StringUtils.isEmpty(path)) {
 			result = path + "." + itemId;
-			parameterSource.addValue("path", result);
 		} else {
 			result = String.valueOf(itemId);
-			parameterSource.addValue("path", result);
 		}
 		return result;
 	}
 
 	private SqlParameterSource getTestItemParams(DBObject item, Long id, String path) {
 		MapSqlParameterSource sqlParameterSource = (MapSqlParameterSource) TEST_SOURCE_PROVIDER.createSqlParameterSource(item);
-		sqlParameterSource.addValue("path", path);
+		sqlParameterSource.addValue("pth", path);
 		sqlParameterSource.addValue("id", id);
 		return sqlParameterSource;
 	}
