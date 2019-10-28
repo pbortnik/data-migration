@@ -51,7 +51,9 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 		if (retrieveLaunch(item) == null) {
 			return null;
 		}
-		retrieveParent(item);
+		if (retrieveParent(item) == null) {
+			return null;
+		}
 		retrieveParentPath(item);
 		retrieveIssue(item);
 		return item;
@@ -73,6 +75,11 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 			return item;
 		}
 		Long parentId = cacheableDataService.retrieveItemId(parent);
+
+		if (parentId == null && (Long) item.get("pathLevel") != 0) {
+			return null;
+		}
+
 		item.put("parentId", parentId);
 		return item;
 	}
