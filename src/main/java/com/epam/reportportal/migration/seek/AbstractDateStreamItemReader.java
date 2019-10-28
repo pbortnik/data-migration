@@ -6,6 +6,7 @@ import org.springframework.batch.item.ItemStreamException;
 import org.springframework.batch.item.ParseException;
 import org.springframework.batch.item.UnexpectedInputException;
 import org.springframework.batch.item.support.AbstractItemStreamItemReader;
+import org.springframework.util.Assert;
 
 import java.util.Date;
 
@@ -58,7 +59,7 @@ public abstract class AbstractDateStreamItemReader<T> extends AbstractItemStream
 	 * @throws Exception Allows subclasses to throw checked exceptions for interpretation by the framework
 	 */
 	protected void jumpToItem(Date date) throws Exception {
-		return;
+		currentDate = date;
 	}
 
 	public void setLatestDate(Date latestDate) {
@@ -126,6 +127,14 @@ public abstract class AbstractDateStreamItemReader<T> extends AbstractItemStream
 
 		currentDate = date;
 
+	}
+
+	@Override
+	public void update(ExecutionContext executionContext) throws ItemStreamException {
+		super.update(executionContext);
+		Assert.notNull(executionContext, "ExecutionContext must not be null");
+		executionContext.put(getExecutionContextKey(OBJECT_ID), currentDate);
+		executionContext.put(getExecutionContextKey(OBJECT_LATEST_ID), latestDate);
 	}
 
 }
