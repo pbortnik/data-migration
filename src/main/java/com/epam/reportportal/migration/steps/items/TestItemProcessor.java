@@ -76,7 +76,7 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 		}
 		Long parentId = cacheableDataService.retrieveItemId(parent);
 
-		if (parentId == null && (Long) item.get("pathLevel") != 0) {
+		if (parentId == null && (Integer) item.get("pathLevel") != 0) {
 			return null;
 		}
 
