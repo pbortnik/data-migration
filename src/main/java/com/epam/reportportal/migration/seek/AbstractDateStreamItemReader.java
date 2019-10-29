@@ -19,8 +19,8 @@ public abstract class AbstractDateStreamItemReader<T> extends AbstractItemStream
 
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
-	private static final String OBJECT_ID = "object.date";
-	private static final String OBJECT_LATEST_ID = "object.latest.date";
+	private static final String OBJECT_DATE = "object.date";
+	private static final String OBJECT_LATEST_DATE = "object.latest.date";
 
 	private String dateField;
 
@@ -65,6 +65,7 @@ public abstract class AbstractDateStreamItemReader<T> extends AbstractItemStream
 	 * @throws Exception Allows subclasses to throw checked exceptions for interpretation by the framework
 	 */
 	protected void jumpToItem(Date date) throws Exception {
+		LOGGER.info("Continue from date " + date);
 		currentDate = date;
 	}
 
@@ -117,13 +118,13 @@ public abstract class AbstractDateStreamItemReader<T> extends AbstractItemStream
 			throw new ItemStreamException("Failed to initialize the reader", e);
 		}
 
-		if (executionContext.containsKey(getExecutionContextKey(OBJECT_LATEST_ID))) {
-			latestDate = (Date) executionContext.get(getExecutionContextKey(OBJECT_LATEST_ID));
+		if (executionContext.containsKey(getExecutionContextKey(OBJECT_LATEST_DATE))) {
+			latestDate = (Date) executionContext.get(getExecutionContextKey(OBJECT_LATEST_DATE));
 		}
 
 		Date date = null;
-		if (executionContext.containsKey(getExecutionContextKey(OBJECT_ID))) {
-			date = (Date) executionContext.get(getExecutionContextKey(OBJECT_ID));
+		if (executionContext.containsKey(getExecutionContextKey(OBJECT_DATE))) {
+			date = (Date) executionContext.get(getExecutionContextKey(OBJECT_DATE));
 		} else if (currentDate != null) {
 			date = currentDate;
 		}
@@ -144,8 +145,8 @@ public abstract class AbstractDateStreamItemReader<T> extends AbstractItemStream
 	public void update(ExecutionContext executionContext) throws ItemStreamException {
 		super.update(executionContext);
 		Assert.notNull(executionContext, "ExecutionContext must not be null");
-		executionContext.put(getExecutionContextKey(OBJECT_ID), currentDate);
-		executionContext.put(getExecutionContextKey(OBJECT_LATEST_ID), latestDate);
+		executionContext.put(getExecutionContextKey(OBJECT_DATE), currentDate);
+		executionContext.put(getExecutionContextKey(OBJECT_LATEST_DATE), latestDate);
 	}
 
 }
