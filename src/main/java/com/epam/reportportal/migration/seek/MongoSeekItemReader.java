@@ -1,11 +1,15 @@
 package com.epam.reportportal.migration.seek;
 
 import com.mongodb.util.JSON;
+import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.BasicQuery;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
@@ -22,6 +26,7 @@ import java.util.regex.Pattern;
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
  */
 public class MongoSeekItemReader<T> extends AbstractSeekItemReader<T> implements InitializingBean {
+	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
 	private static final Pattern PLACEHOLDER = Pattern.compile("\\?(\\d+)");
 	private MongoOperations template;
@@ -123,6 +128,9 @@ public class MongoSeekItemReader<T> extends AbstractSeekItemReader<T> implements
 		String populatedQuery = replacePlaceholders(query, parameterValues);
 
 		Query mongoQuery = new BasicQuery(populatedQuery);
+		if (getCurrentId() != null) {
+			mongoQuery.addCriteria(Criteria.where("_id").gt(new ObjectId(getCurrentId())));
+		}
 		mongoQuery.limit(limit).with(sort);
 
 		if (StringUtils.hasText(collection)) {

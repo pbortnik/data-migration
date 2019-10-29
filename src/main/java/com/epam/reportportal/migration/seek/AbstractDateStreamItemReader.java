@@ -1,6 +1,8 @@
 package com.epam.reportportal.migration.seek;
 
 import com.mongodb.DBObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemStreamException;
 import org.springframework.batch.item.ParseException;
@@ -15,10 +17,14 @@ import java.util.Date;
  */
 public abstract class AbstractDateStreamItemReader<T> extends AbstractItemStreamItemReader<T> {
 
+	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
+
 	private static final String OBJECT_ID = "object.date";
 	private static final String OBJECT_LATEST_ID = "object.latest.date";
 
 	private String dateField;
+
+	private String currentId;
 
 	private Date latestDate;
 
@@ -74,6 +80,10 @@ public abstract class AbstractDateStreamItemReader<T> extends AbstractItemStream
 		return currentDate;
 	}
 
+	public String getCurrentId() {
+		return currentId;
+	}
+
 	@Override
 	public T read() throws Exception, UnexpectedInputException, ParseException {
 		if (latestDate.getTime() <= currentDate.getTime()) {
@@ -82,6 +92,7 @@ public abstract class AbstractDateStreamItemReader<T> extends AbstractItemStream
 		T t = doRead();
 		if (t instanceof DBObject) {
 			currentDate = (Date) ((DBObject) t).get(dateField);
+			currentId = ((DBObject) t).get("_id").toString();
 		}
 		return t;
 	}
