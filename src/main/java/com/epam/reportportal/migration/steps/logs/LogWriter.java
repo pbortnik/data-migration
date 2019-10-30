@@ -18,6 +18,7 @@ import java.nio.file.Paths;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.migration.datastore.binary.impl.DataStoreUtils.buildThumbnailFileName;
@@ -29,6 +30,8 @@ import static com.epam.reportportal.migration.steps.utils.MigrationUtils.toUtc;
  */
 @Component
 public class LogWriter implements ItemWriter<DBObject> {
+
+	private static final Pattern NULL_PATTERN = Pattern.compile("\\u0000");
 
 	private static final String INSERT_LOG = "INSERT INTO log (uuid, log_time, log_message, item_id, last_modified, log_level) "
 			+ "VALUES (:uid, :lt, :lmsg, :item, :lm, :ll) ON CONFLICT DO NOTHING";
@@ -66,9 +69,6 @@ public class LogWriter implements ItemWriter<DBObject> {
 
 		splitted.get(false).forEach(logWithBinary -> {
 			GridFSDBFile file = (GridFSDBFile) logWithBinary.get("file");
-			if (file.getFilename().startsWith("thumbnail")) {
-				return;
-			}
 
 			String commonPath = Paths.get(logWithBinary.get("projectId").toString(), filePathGenerator.generate()).toString();
 			String targetPath = Paths.get(commonPath, file.getFilename()).toString();
@@ -104,7 +104,7 @@ public class LogWriter implements ItemWriter<DBObject> {
 		MapSqlParameterSource parameterSource = new MapSqlParameterSource();
 		parameterSource.addValue("uid", log.get("_id").toString());
 		parameterSource.addValue("lt", toUtc((Date) log.get("logTime")));
-		parameterSource.addValue("lmsg", log.get("logMsg"));
+		parameterSource.addValue("lmsg", NULL_PATTERN.matcher((String) log.get("logMsg")).replaceAll(""));
 		parameterSource.addValue("item", log.get("itemId"));
 		parameterSource.addValue("lm", toUtc((Date) log.get("last_modified")));
 		parameterSource.addValue("ll", logLevel);
