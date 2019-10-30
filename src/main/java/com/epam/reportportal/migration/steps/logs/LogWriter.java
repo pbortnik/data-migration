@@ -66,6 +66,9 @@ public class LogWriter implements ItemWriter<DBObject> {
 
 		splitted.get(false).forEach(logWithBinary -> {
 			GridFSDBFile file = (GridFSDBFile) logWithBinary.get("file");
+			if (file.getFilename().startsWith("thumbnail")) {
+				return;
+			}
 
 			String commonPath = Paths.get(logWithBinary.get("projectId").toString(), filePathGenerator.generate()).toString();
 			String targetPath = Paths.get(commonPath, file.getFilename()).toString();
