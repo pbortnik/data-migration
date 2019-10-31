@@ -7,6 +7,7 @@ import com.mongodb.DBObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ChunkListener;
+import org.springframework.batch.core.SkipListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -63,6 +64,9 @@ public class LogStepConfig {
 	private ChunkListener chunkCountListener;
 
 	@Autowired
+	private SkipListener logSkipListener;
+
+	@Autowired
 	private TaskExecutor threadPoolTaskExecutor;
 
 	@Bean(name = "migrateLogStep")
@@ -83,6 +87,10 @@ public class LogStepConfig {
 		return stepBuilderFactory.get("slaveLogStep").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(logItemReader(null, null))
 				.processor(logProcessor)
 				.writer(logWriter)
+				.faultTolerant()
+				.skip(Exception.class)
+				.skipLimit(CHUNK_SIZE)
+				.listener(logSkipListener)
 				.build();
 	}
 

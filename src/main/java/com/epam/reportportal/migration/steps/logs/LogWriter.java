@@ -15,11 +15,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.migration.datastore.binary.impl.DataStoreUtils.buildThumbnailFileName;
@@ -31,8 +29,6 @@ import static com.epam.reportportal.migration.steps.utils.MigrationUtils.toUtc;
  */
 @Component
 public class LogWriter implements ItemWriter<DBObject> {
-
-	private static final Pattern NULL_PATTERN = Pattern.compile("\\u0000");
 
 	private static final String INSERT_LOG = "INSERT INTO log (uuid, log_time, log_message, item_id, last_modified, log_level) "
 			+ "VALUES (:uid, :lt, :lmsg, :item, :lm, :ll) ON CONFLICT DO NOTHING";
@@ -65,19 +61,8 @@ public class LogWriter implements ItemWriter<DBObject> {
 				.stream()
 				.map(LOG_SOURCE_PROVIDER::createSqlParameterSource)
 				.toArray(SqlParameterSource[]::new);
-		try {
-			jdbcTemplate.batchUpdate(INSERT_LOG, values);
-		} catch (Exception e) {
-			if (e.getMessage().contains("invalid byte sequence for encoding \"UTF8\"")) {
-				Arrays.stream(values)
-						.forEach(it -> ((MapSqlParameterSource) it).addValue("lmsg",
-								NULL_PATTERN.matcher((String) it.getValue("lmsg")).replaceAll("")
-						));
-				jdbcTemplate.batchUpdate(INSERT_LOG, values);
-			} else {
-				throw e;
-			}
-		}
+
+		jdbcTemplate.batchUpdate(INSERT_LOG, values);
 
 		splitted.get(false).forEach(logWithBinary -> {
 			GridFSDBFile file = (GridFSDBFile) logWithBinary.get("file");
@@ -95,16 +80,7 @@ public class LogWriter implements ItemWriter<DBObject> {
 			);
 			MapSqlParameterSource sqlParameterSource = (MapSqlParameterSource) LOG_SOURCE_PROVIDER.createSqlParameterSource(logWithBinary);
 			sqlParameterSource.addValue("attachId", attachmentId);
-			try {
-				jdbcTemplate.update(INSERT_LOG_WITH_ATTACH, sqlParameterSource);
-			} catch (Exception e) {
-				if (e.getMessage().contains("invalid byte sequence for encoding \"UTF8\"")) {
-					sqlParameterSource.addValue("lmsg", NULL_PATTERN.matcher((String) sqlParameterSource.getValue("lmsg")).replaceAll(""));
-					jdbcTemplate.batchUpdate(INSERT_LOG_WITH_ATTACH, values);
-				} else {
-					throw e;
-				}
-			}
+			jdbcTemplate.update(INSERT_LOG_WITH_ATTACH, sqlParameterSource);
 		});
 	}
 
