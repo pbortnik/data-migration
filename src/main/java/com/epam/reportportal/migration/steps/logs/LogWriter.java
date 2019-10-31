@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -58,19 +59,30 @@ public class LogWriter implements ItemWriter<DBObject> {
 	public void write(List<? extends DBObject> items) {
 
 		Map<Boolean, ? extends List<? extends DBObject>> splitted = items.stream()
-				.collect(Collectors.partitioningBy(it -> it.get("binary_content") == null));
+				.collect(Collectors.partitioningBy(it -> it.get("file") == null));
 
 		SqlParameterSource[] values = splitted.get(true)
 				.stream()
 				.map(LOG_SOURCE_PROVIDER::createSqlParameterSource)
 				.toArray(SqlParameterSource[]::new);
-
-		jdbcTemplate.batchUpdate(INSERT_LOG, values);
+		try {
+			jdbcTemplate.batchUpdate(INSERT_LOG, values);
+		} catch (Exception e) {
+			if (e.getMessage().contains("invalid byte sequence for encoding \"UTF8\"")) {
+				Arrays.stream(values)
+						.forEach(it -> ((MapSqlParameterSource) it).addValue("lmsg",
+								NULL_PATTERN.matcher((String) it.getValue("lmsg")).replaceAll("")
+						));
+				jdbcTemplate.batchUpdate(INSERT_LOG, values);
+			} else {
+				throw e;
+			}
+		}
 
 		splitted.get(false).forEach(logWithBinary -> {
 			GridFSDBFile file = (GridFSDBFile) logWithBinary.get("file");
 
-			String commonPath = Paths.get(logWithBinary.get("projectId").toString(), filePathGenerator.generate()).toString();
+			String commonPath = Paths.get(String.valueOf(logWithBinary.get("projectId")), filePathGenerator.generate()).toString();
 			String targetPath = Paths.get(commonPath, file.getFilename()).toString();
 
 			String path = dataStoreService.save(targetPath, file.getInputStream());
@@ -83,7 +95,16 @@ public class LogWriter implements ItemWriter<DBObject> {
 			);
 			MapSqlParameterSource sqlParameterSource = (MapSqlParameterSource) LOG_SOURCE_PROVIDER.createSqlParameterSource(logWithBinary);
 			sqlParameterSource.addValue("attachId", attachmentId);
-			jdbcTemplate.update(INSERT_LOG_WITH_ATTACH, sqlParameterSource);
+			try {
+				jdbcTemplate.update(INSERT_LOG_WITH_ATTACH, sqlParameterSource);
+			} catch (Exception e) {
+				if (e.getMessage().contains("invalid byte sequence for encoding \"UTF8\"")) {
+					sqlParameterSource.addValue("lmsg", NULL_PATTERN.matcher((String) sqlParameterSource.getValue("lmsg")).replaceAll(""));
+					jdbcTemplate.batchUpdate(INSERT_LOG_WITH_ATTACH, values);
+				} else {
+					throw e;
+				}
+			}
 		});
 	}
 
@@ -104,7 +125,7 @@ public class LogWriter implements ItemWriter<DBObject> {
 		MapSqlParameterSource parameterSource = new MapSqlParameterSource();
 		parameterSource.addValue("uid", log.get("_id").toString());
 		parameterSource.addValue("lt", toUtc((Date) log.get("logTime")));
-		parameterSource.addValue("lmsg", NULL_PATTERN.matcher((String) log.get("logMsg")).replaceAll(""));
+		parameterSource.addValue("lmsg", log.get("logMsg"));
 		parameterSource.addValue("item", log.get("itemId"));
 		parameterSource.addValue("lm", toUtc((Date) log.get("last_modified")));
 		parameterSource.addValue("ll", logLevel);
