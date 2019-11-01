@@ -30,6 +30,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -40,6 +42,7 @@ public class MinioDataStore implements DataStore {
 	public static final String DEFAULT_BUCKET = "rp-bucket";
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MinioDataStore.class);
+	private static final Lock CREATE_BUCKET_LOCK = new ReentrantLock();
 
 	private final MinioClient minioClient;
 
@@ -52,7 +55,14 @@ public class MinioDataStore implements DataStore {
 		MinioFile minioFile = getMinioFile(filePath);
 		try {
 			if (!minioClient.bucketExists(minioFile.getBucket())) {
-				minioClient.makeBucket(minioFile.getBucket());
+				CREATE_BUCKET_LOCK.lock();
+				try {
+					if (!minioClient.bucketExists(minioFile.getBucket())) {
+						minioClient.makeBucket(minioFile.getBucket());
+					}
+				} finally {
+					CREATE_BUCKET_LOCK.unlock();
+				}
 			}
 
 			minioClient.putObject(minioFile.getBucket(), minioFile.getFilePath(), inputStream, inputStream.available(), Maps.newHashMap());

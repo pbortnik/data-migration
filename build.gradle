@@ -36,7 +36,7 @@ dependencies {
     compile 'org.springframework.data:spring-data-mongodb:1.10.9.RELEASE'
     compile('org.springframework.boot:spring-boot-starter-batch:2.1.7.RELEASE')
     compile 'com.epam.reportportal:commons:5.0.0-BETA-2'
-    compile 'io.minio:minio:6.0.10'
+    compile 'io.minio:minio:6.0.11'
     compile 'org.lokra.seaweedfs:seaweedfs-client:0.7.3.RELEASE'
     compile 'org.apache.commons:commons-lang3:3.9'
 
