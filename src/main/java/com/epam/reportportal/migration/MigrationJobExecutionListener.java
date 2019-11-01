@@ -4,9 +4,12 @@ import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
+
+import javax.sql.DataSource;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
@@ -19,14 +22,20 @@ public class MigrationJobExecutionListener implements JobExecutionListener {
 	private ThreadPoolTaskExecutor taskExecutor;
 
 	@Autowired
-	private JdbcTemplate jdbcTemplate;
+	private DataSource dataSource;
 
 	@Override
 	public void beforeJob(JobExecution jobExecution) {
+		ClassPathResource resource = new ClassPathResource("drop_indexes.sql");
+		ResourceDatabasePopulator databasePopulator = new ResourceDatabasePopulator(resource);
+		databasePopulator.execute(dataSource);
 	}
 
 	@Override
 	public void afterJob(JobExecution jobExecution) {
 		taskExecutor.shutdown();
+		ClassPathResource resource = new ClassPathResource("index_create.sql");
+		ResourceDatabasePopulator databasePopulator = new ResourceDatabasePopulator(resource);
+		databasePopulator.execute(dataSource);
 	}
 }
