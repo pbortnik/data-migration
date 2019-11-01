@@ -3,6 +3,8 @@ package com.epam.reportportal.migration.steps.shareable.widget;
 import com.epam.reportportal.migration.steps.shareable.ShareableUtilService;
 import com.epam.reportportal.migration.steps.utils.MigrationUtils;
 import com.google.common.collect.ImmutableMap;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.springframework.batch.core.ChunkListener;
 import org.springframework.batch.core.Step;
@@ -15,9 +17,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PostConstruct;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
@@ -96,7 +100,6 @@ public class WidgetStepConfig {
 	@Autowired
 	private ChunkListener chunkCountListener;
 
-
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
 
@@ -142,8 +145,171 @@ public class WidgetStepConfig {
 			if (!processed) {
 				return null;
 			}
+			DBObject contentOptions = (DBObject) widget.get("contentOptions");
+			String widgetOptions = processWidgetOptions(contentOptions);
+			if (widgetOptions == null) {
+				return null;
+			}
+			widget.put("widgetOptions", widgetOptions);
 			return widget;
 		};
+	}
+
+	private String processWidgetOptions(DBObject contentOptions) {
+		DBObject widgetOptions = (DBObject) contentOptions.get("widgetOptions");
+
+		if (!TYPE_MAPPING.containsKey((String) contentOptions.get("gadgetType"))) {
+			return null;
+		}
+
+		switch ((String) contentOptions.get("gadgetType")) {
+
+			case "activity_stream":
+				if (widgetOptions == null) {
+					return null;
+				}
+				processActivityOptions(widgetOptions);
+				break;
+
+			case "investigated_trend":
+			case "cases_trend":
+				widgetOptions = processTimeline(widgetOptions);
+				break;
+
+			case "flaky_test_cases":
+			case "most_failed_test_cases":
+				widgetOptions = processFlaky(widgetOptions);
+				break;
+
+			case "launches_duration_chart":
+				widgetOptions = processLatest(widgetOptions);
+				break;
+			case "overall_statistics":
+				widgetOptions = processLatest(widgetOptions);
+				widgetOptions = processOverall(widgetOptions);
+				break;
+			case "passing_rate_per_launch":
+				widgetOptions = processLaunchFilterName(widgetOptions);
+				widgetOptions = processView(widgetOptions);
+				break;
+			case "passing_rate_summary":
+				widgetOptions = processView(widgetOptions);
+				break;
+			case "statistic_trend":
+				widgetOptions = processTimeline(widgetOptions);
+				widgetOptions = processStatsTrend(widgetOptions);
+				break;
+			case "unique_bug_table":
+				widgetOptions = new BasicDBObject().append("latest", false);
+				break;
+			default:
+				widgetOptions = new BasicDBObject();
+
+		}
+		return new BasicDBObject("options", widgetOptions).toString();
+	}
+
+	private DBObject processStatsTrend(DBObject widgetOptions) {
+		BasicDBList basicDBList = (BasicDBList) widgetOptions.get("viewMode");
+		if (!CollectionUtils.isEmpty(basicDBList)) {
+			String viewMode = (String) basicDBList.get(0);
+			widgetOptions.put("viewMode", "bar");
+			if (viewMode.equalsIgnoreCase("areaChartMode")) {
+				widgetOptions.put("viewMode", "area-spline");
+			}
+		} else {
+			widgetOptions.put("viewMode", "bar");
+		}
+		widgetOptions.put("zoom", false);
+		return widgetOptions;
+	}
+
+	private DBObject processView(DBObject widgetOptions) {
+		if (widgetOptions.get("viewMode") != null) {
+			String viewMode = (String) ((BasicDBList) widgetOptions.get("viewMode")).get(0);
+			if (viewMode.equalsIgnoreCase("barMode")) {
+				widgetOptions.put("viewMode", "bar");
+			} else if (viewMode.equalsIgnoreCase("pieChartMode")) {
+				widgetOptions.put("viewMode", "pie");
+			}
+			return widgetOptions;
+		}
+		widgetOptions.put("viewMode", "bar");
+		return widgetOptions;
+	}
+
+	private DBObject processLaunchFilterName(DBObject widgetOptions) {
+		if (widgetOptions != null) {
+			BasicDBList launchNameFilter = (BasicDBList) widgetOptions.get("launchNameFilter");
+			if (!CollectionUtils.isEmpty(launchNameFilter)) {
+				widgetOptions.put("launchNameFilter", launchNameFilter.get(0));
+			}
+			return widgetOptions;
+		}
+		return new BasicDBObject();
+	}
+
+	private DBObject processOverall(DBObject widgetOptions) {
+		BasicDBList viewMode = (BasicDBList) widgetOptions.get("viewMode");
+		if (!CollectionUtils.isEmpty(viewMode)) {
+			widgetOptions.put("viewMode", viewMode.get(0));
+		} else {
+			widgetOptions.put("viewMode", "panel");
+		}
+		return widgetOptions;
+	}
+
+	private DBObject processLatest(DBObject widgetOptions) {
+		if (widgetOptions != null) {
+			Object latest = widgetOptions.get("latest");
+			if (latest != null) {
+				widgetOptions.put("latest", true);
+				return widgetOptions;
+			}
+		}
+		return new BasicDBObject("latest", false);
+	}
+
+	private DBObject processFlaky(DBObject widgetOptions) {
+		if (widgetOptions != null) {
+			if (widgetOptions.get("include_methods") != null) {
+				widgetOptions.put("includeMethods", true);
+				widgetOptions.removeField("include_methods");
+			} else {
+				widgetOptions.put("includeMethods", false);
+			}
+			if (widgetOptions.get("launchNameFilter") != null) {
+				widgetOptions.put("launchNameFilter", ((BasicDBList) widgetOptions.get("launchNameFilter")).get(0));
+			}
+			return widgetOptions;
+		}
+		return new BasicDBObject();
+	}
+
+	private DBObject processTimeline(DBObject widgetOptions) {
+		if (widgetOptions != null) {
+			BasicDBList timeline = (BasicDBList) widgetOptions.get("timeline");
+			if (!CollectionUtils.isEmpty(timeline)) {
+				String res = timeline.get(0).toString().toLowerCase();
+				widgetOptions.put("timeline", res);
+			}
+			return widgetOptions;
+		}
+		return new BasicDBObject();
+	}
+
+	private void processActivityOptions(DBObject widgetOptions) {
+		if (widgetOptions.get("userRef") != null) {
+			widgetOptions.put("userRef",
+					((BasicDBList) widgetOptions.get("userRef")).stream().map(String.class::cast).collect(Collectors.joining(","))
+			);
+		}
+		widgetOptions.put("actionType",
+				((BasicDBList) widgetOptions.get("actionType")).stream()
+						.map(String.class::cast)
+						.map(it -> WIDGET_OPTIONS_MAPPING.get(it))
+						.collect(Collectors.toList())
+		);
 	}
 
 }

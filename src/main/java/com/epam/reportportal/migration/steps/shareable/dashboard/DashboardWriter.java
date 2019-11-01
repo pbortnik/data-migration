@@ -50,6 +50,8 @@ public class DashboardWriter implements ItemWriter<DBObject> {
 		widgets.stream()
 				.map(DBObject.class::cast)
 				.filter(it -> it.containsField("postgresId"))
+				.filter(it -> it.get("widgetSize") != null && ((BasicDBList) it.get("widgetSize")).size() == 2)
+				.filter(it -> it.get("widgetPosition") != null && ((BasicDBList) it.get("widgetPosition")).size() == 2)
 				.forEach(widget -> params.add(new Object[] { dashboardId, widget.get("postgresId"), widget.get("name"), widget.get("owner"),
 						widget.get("share"), widget.get("type"), ((BasicDBList) widget.get("widgetSize")).get(0),
 						((BasicDBList) widget.get("widgetSize")).get(1), ((BasicDBList) widget.get("widgetPosition")).get(0),

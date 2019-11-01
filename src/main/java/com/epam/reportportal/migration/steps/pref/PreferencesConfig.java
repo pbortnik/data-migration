@@ -34,7 +34,7 @@ public class PreferencesConfig {
 
 	private static final int CHUNK_SIZE = 100;
 
-	private static final String INSERT_USER_PREFERENCES = "INSERT INTO user_preference (project_id, user_id, filter_id) VALUES (?,?,?)";
+	private static final String INSERT_USER_PREFERENCES = "INSERT INTO user_preference (project_id, user_id, filter_id) VALUES (?,?,?) ON CONFLICT DO NOTHING";
 
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
