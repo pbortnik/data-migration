@@ -1,5 +1,6 @@
 package com.epam.reportportal.migration;
 
+import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,8 +35,10 @@ public class MigrationJobExecutionListener implements JobExecutionListener {
 	@Override
 	public void afterJob(JobExecution jobExecution) {
 		taskExecutor.shutdown();
-		ClassPathResource resource = new ClassPathResource("index_create.sql");
-		ResourceDatabasePopulator databasePopulator = new ResourceDatabasePopulator(resource);
-		databasePopulator.execute(dataSource);
+		if (jobExecution.getStatus().equals(BatchStatus.COMPLETED)) {
+			ClassPathResource resource = new ClassPathResource("index_create.sql");
+			ResourceDatabasePopulator databasePopulator = new ResourceDatabasePopulator(resource);
+			databasePopulator.execute(dataSource);
+		}
 	}
 }
