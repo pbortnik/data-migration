@@ -9,9 +9,11 @@ DROP INDEX IF EXISTS test_item_unique_id_launch_id_idx;
 DROP INDEX IF EXISTS item_test_case_id_launch_id_idx;
 DROP INDEX IF EXISTS path_gist_idx;
 DROP INDEX IF EXISTS path_idx;
-ALTER TABLE test_item DROP CONSTRAINT IF EXISTS test_item_retry_of_fkey;
+ALTER TABLE test_item
+    DROP CONSTRAINT IF EXISTS test_item_retry_of_fkey;
 DROP INDEX IF EXISTS parameter_ti_idx;
-ALTER TABLE item_attribute DROP CONSTRAINT IF EXISTS item_attribute_check;
+ALTER TABLE item_attribute
+    DROP CONSTRAINT IF EXISTS item_attribute_check;
 DROP INDEX IF EXISTS item_attr_ti_idx;
 DROP INDEX IF EXISTS item_attr_launch_idx;
 ALTER TABLE log
@@ -36,23 +38,16 @@ ALTER TABLE reportportal.public.issue_ticket
     DROP CONSTRAINT IF EXISTS issue_ticket_issue_id_fkey,
     DROP CONSTRAINT IF EXISTS issue_ticket_ticket_id_fkey;
 ALTER TABLE issue
-    SET (AUTOVACUUM_ENABLED = FALSE),
-    SET UNLOGGED;
+    SET (AUTOVACUUM_ENABLED = FALSE);
 ALTER TABLE test_item_results
-    SET (AUTOVACUUM_ENABLED = FALSE),
-    SET UNLOGGED;
+    SET (AUTOVACUUM_ENABLED = FALSE);
 ALTER TABLE test_item
-    SET (AUTOVACUUM_ENABLED = FALSE),
-    SET UNLOGGED;
+    SET (AUTOVACUUM_ENABLED = FALSE);
 ALTER TABLE item_attribute
-    SET (AUTOVACUUM_ENABLED = FALSE),
-    SET UNLOGGED;
+    SET (AUTOVACUUM_ENABLED = FALSE);
 ALTER TABLE parameter
-    SET (AUTOVACUUM_ENABLED = FALSE),
-    SET UNLOGGED;
+    SET (AUTOVACUUM_ENABLED = FALSE);
 ALTER TABLE statistics
-    SET (AUTOVACUUM_ENABLED = FALSE),
-    SET UNLOGGED;
+    SET (AUTOVACUUM_ENABLED = FALSE);
 ALTER TABLE log
-    SET (AUTOVACUUM_ENABLED = FALSE),
-    SET UNLOGGED;
+    SET (AUTOVACUUM_ENABLED = FALSE);

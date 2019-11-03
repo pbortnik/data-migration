@@ -5,6 +5,9 @@ spring:
       uri: ${rp.mongodb.uri}
 
 rp:
+  pool:
+    corePoolSize: 6
+    maxPoolSize: 8
   mongodb:
     uri: mongodb://localhost:27017
     database: reportportal
