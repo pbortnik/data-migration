@@ -3,6 +3,7 @@ package com.epam.reportportal.migration;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -19,6 +20,12 @@ import java.util.concurrent.TimeUnit;
 @SpringBootApplication
 public class DataMigrationApplication {
 
+	@Value("${rp.pool.corePoolSize}")
+	private int corePoolSize;
+
+	@Value("${rp.pool.maxPoolSize}")
+	private int maxPoolSize;
+
 	@Bean
 	public Cache<String, Long> customStatisticsFieldsCache() {
 		return Caffeine.newBuilder().initialCapacity(100).maximumSize(1000).expireAfterAccess(30, TimeUnit.HOURS).build();
@@ -32,7 +39,7 @@ public class DataMigrationApplication {
 	@Bean
 	// mongo uuid -> postgres id
 	public Cache<String, Object> idsCache() {
-		return Caffeine.newBuilder().initialCapacity(5_000).maximumSize(5_000_000).expireAfterAccess(30, TimeUnit.HOURS).build();
+		return Caffeine.newBuilder().initialCapacity(5_000).maximumSize(1_000_000).expireAfterAccess(30, TimeUnit.HOURS).build();
 	}
 
 	@Bean
@@ -65,8 +72,8 @@ public class DataMigrationApplication {
 	@Bean("threadPoolTaskExecutor")
 	public ThreadPoolTaskExecutor taskExecutor() {
 		ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
-		threadPoolTaskExecutor.setCorePoolSize(12);
-		threadPoolTaskExecutor.setMaxPoolSize(12);
+		threadPoolTaskExecutor.setCorePoolSize(corePoolSize);
+		threadPoolTaskExecutor.setMaxPoolSize(maxPoolSize);
 		return threadPoolTaskExecutor;
 	}
 
