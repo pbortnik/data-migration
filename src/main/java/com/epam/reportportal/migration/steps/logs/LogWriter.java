@@ -4,6 +4,7 @@ import com.epam.reportportal.migration.datastore.binary.DataStoreService;
 import com.epam.reportportal.migration.datastore.filesystem.FilePathGenerator;
 import com.mongodb.DBObject;
 import com.mongodb.gridfs.GridFSDBFile;
+import org.apache.tika.io.IOUtils;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.ItemSqlParameterSourceProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,8 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Component;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.Date;
@@ -31,15 +34,15 @@ import static com.epam.reportportal.migration.steps.utils.MigrationUtils.toUtc;
 public class LogWriter implements ItemWriter<DBObject> {
 
 	private static final String INSERT_LOG = "INSERT INTO log (uuid, log_time, log_message, item_id, last_modified, log_level) "
-			+ "VALUES (:uid, :lt, :lmsg, :item, :lm, :ll)";
+			+ "VALUES (:uid, :lt, :lmsg, :item, :lm, :ll) ON CONFLICT DO NOTHING";
 
 	private static final String INSERT_LOG_WITH_ATTACH =
 			"INSERT INTO log (uuid, log_time, log_message, item_id, last_modified, log_level, attachment_id) "
-					+ "VALUES (:uid, :lt, :lmsg, :item, :lm, :ll, :attachId)";
+					+ "VALUES (:uid, :lt, :lmsg, :item, :lm, :ll, :attachId) ON CONFLICT DO NOTHING";
 
 	private static final String INSERT_ATTACH =
 			"INSERT INTO attachment (file_id, thumbnail_id, content_type, project_id, launch_id, item_id) "
-					+ "VALUES (:fid, :tid, :ct, :pr, :lnch, :item) RETURNING id";
+					+ "VALUES (:fid, :tid, :ct, :pr, :lnch, :item) ON CONFLICT DO NOTHING RETURNING id";
 
 	@Autowired
 	@Qualifier("attachmentDataStoreService")
@@ -55,7 +58,7 @@ public class LogWriter implements ItemWriter<DBObject> {
 	public void write(List<? extends DBObject> items) {
 
 		Map<Boolean, ? extends List<? extends DBObject>> splitted = items.stream()
-				.collect(Collectors.partitioningBy(it -> it.get("binary_content") == null));
+				.collect(Collectors.partitioningBy(it -> it.get("file") == null));
 
 		SqlParameterSource[] values = splitted.get(true)
 				.stream()
@@ -67,12 +70,19 @@ public class LogWriter implements ItemWriter<DBObject> {
 		splitted.get(false).forEach(logWithBinary -> {
 			GridFSDBFile file = (GridFSDBFile) logWithBinary.get("file");
 
-			String commonPath = Paths.get(logWithBinary.get("projectId").toString(), filePathGenerator.generate()).toString();
+			byte[] bytes;
+			try {
+				bytes = IOUtils.toByteArray(file.getInputStream());
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+
+			String commonPath = Paths.get(String.valueOf(logWithBinary.get("projectId")), filePathGenerator.generate()).toString();
 			String targetPath = Paths.get(commonPath, file.getFilename()).toString();
 
-			String path = dataStoreService.save(targetPath, file.getInputStream());
+			String path = dataStoreService.save(targetPath, new ByteArrayInputStream(bytes));
 
-			String pathThumbnail = createThumbnail(file.getInputStream(), file.getContentType(), file.getFilename(), commonPath);
+			String pathThumbnail = createThumbnail(new ByteArrayInputStream(bytes), file.getContentType(), file.getFilename(), commonPath);
 
 			Long attachmentId = jdbcTemplate.queryForObject(INSERT_ATTACH,
 					attachSourceProvider(logWithBinary, file, path, pathThumbnail),

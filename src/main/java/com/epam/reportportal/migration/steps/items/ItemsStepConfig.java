@@ -1,15 +1,17 @@
 package com.epam.reportportal.migration.steps.items;
 
-import com.epam.reportportal.migration.steps.utils.MigrationUtils;
+import com.epam.reportportal.migration.seek.MongoSeekItemReader;
+import com.google.common.collect.Lists;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.ChunkListener;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,10 +28,12 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.Function;
 
 /**
  * @author <a href="mailto:pavel_bortnik@epam.com">Pavel Bortnik</a>
@@ -37,7 +41,11 @@ import java.util.function.Function;
 @Configuration
 public class ItemsStepConfig {
 
-	private static final int CHUNK_SIZE = 5_000;
+	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
+
+	private static final int CHUNK_SIZE = 10_000;
+
+	public static String OPTIMIZED_TEST_COLLECTION = "optimizeTest";
 
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
@@ -65,7 +73,7 @@ public class ItemsStepConfig {
 	private String keepFrom;
 
 	@Bean
-	public Function<Integer, Step> itemStepFactory() {
+	public TriFunction<Integer, DBObject, DBObject, Step> itemStepFactory() {
 		return this::migrateItemStep;
 	}
 
@@ -76,12 +84,12 @@ public class ItemsStepConfig {
 
 		DBObject testItem = mongoTemplate.findOne(new Query().with(new Sort(Sort.Direction.DESC, "pathLevel")).limit(1),
 				DBObject.class,
-				"testItem"
+				OPTIMIZED_TEST_COLLECTION
 		);
 		int pathSize = (int) testItem.get("pathLevel");
 		List<Step> steps = new LinkedList<>();
-		for (Integer i = 0; i <= pathSize; i++) {
-			Step step = itemStepFactory().apply(i);
+		for (int i = 0; i <= pathSize; i++) {
+			Step step = itemStepFactory().apply(i, findStartObject(i), findLastObject(i));
 			steps.add(step);
 		}
 		return steps;
@@ -89,10 +97,10 @@ public class ItemsStepConfig {
 
 	@Bean
 	@Scope(BeanDefinition.SCOPE_PROTOTYPE)
-	public Step migrateItemStep(Integer i) {
+	public Step migrateItemStep(int i, DBObject minObject, DBObject maxObject) {
 		return stepBuilderFactory.get("item." + i)
-				.partitioner("slaveItemStep." + i, partitioner(i))
-				.gridSize(12)
+				.partitioner("slaveItemStep." + i, partitioner(i, minObject, maxObject))
+				.gridSize(18)
 				.step(slaveItemStep(i))
 				.taskExecutor(threadPoolTaskExecutor)
 				.build();
@@ -100,11 +108,11 @@ public class ItemsStepConfig {
 
 	@Bean
 	@Scope(BeanDefinition.SCOPE_PROTOTYPE)
-	public ItemPartitioner partitioner(Integer i) {
-		ItemPartitioner partitioner = new ItemPartitioner();
-		partitioner.setKeepFrom(keepFrom);
-		partitioner.setMongoOperations(mongoTemplate);
+	public DatePartitioner partitioner(Integer i, DBObject minObject, DBObject maxObject) {
+		DatePartitioner partitioner = new DatePartitioner();
 		partitioner.setPathLevel(i);
+		partitioner.setMinDate((Date) minObject.get("start_time"));
+		partitioner.setMaxDate((Date) maxObject.get("start_time"));
 		return partitioner;
 	}
 
@@ -120,44 +128,82 @@ public class ItemsStepConfig {
 
 	@Bean
 	@StepScope
-	public MongoItemReader<DBObject> testItemReader(@Value("#{stepExecutionContext[minValue]}") Long minTime,
-			@Value("#{stepExecutionContext[maxValue]}") Long maxTime, @Value("#{stepExecutionContext[pathLevel]}") Integer i) {
-		MongoItemReader<DBObject> itemReader = MigrationUtils.getMongoItemReader(mongoTemplate, "testItem");
-		itemReader.setQuery("{$and : [ { 'path' : {$size : ?0 }}, { 'start_time': { $gte : ?1 }}, { 'start_time': { $lte : ?2 }}] }");
-		itemReader.setPageSize(CHUNK_SIZE);
-		List<Object> paramValues = new LinkedList<>();
-		paramValues.add(i);
-		paramValues.add(new Date(minTime));
-		paramValues.add(new Date(maxTime));
-		itemReader.setParameterValues(paramValues);
+	public MongoSeekItemReader<DBObject> testItemReader(@Value("#{stepExecutionContext[minValue]}") Long minTime,
+			@Value("#{stepExecutionContext[maxValue]}") Long maxTime, @Value("#{stepExecutionContext[pathLevel]}") Integer pathLevel) {
+		MongoSeekItemReader<DBObject> itemReader = new MongoSeekItemReader<>();
+		itemReader.setTemplate(mongoTemplate);
+		itemReader.setTargetType(DBObject.class);
+		itemReader.setCollection(ItemsStepConfig.OPTIMIZED_TEST_COLLECTION);
+		itemReader.setSort(new HashMap<String, Sort.Direction>() {{
+			put("start_time", Sort.Direction.ASC);
+		}});
+		itemReader.setLimit(CHUNK_SIZE);
+		itemReader.setDateField("start_time");
+		itemReader.setCurrentDate(new Date(minTime));
+		itemReader.setLatestDate(new Date(maxTime));
+		itemReader.setQuery("{$and : [ {start_time : {$gte : ?1}}, {'pathLevel' : ?0}]}");
+		itemReader.setParameterValues(Lists.newArrayList(pathLevel));
 		return itemReader;
 	}
 
+	private DBObject findStartObject(Integer pathLevel) {
+		Query query = Query.query(Criteria.where("pathLevel").is(pathLevel)).with(new Sort(Sort.Direction.ASC, "start_time")).limit(1);
+		return mongoTemplate.findOne(query, DBObject.class, OPTIMIZED_TEST_COLLECTION);
+	}
+
+	private DBObject findLastObject(Integer pathLevel) {
+		Query query = Query.query(Criteria.where("pathLevel").is(pathLevel)).with(new Sort(Sort.Direction.DESC, "start_time")).limit(1);
+		return mongoTemplate.findOne(query, DBObject.class, OPTIMIZED_TEST_COLLECTION);
+	}
+
 	private void prepareCollectionForMigration() {
-		DBObject testItem = mongoTemplate.findOne(new Query().addCriteria(Criteria.where("pathLevel").exists(false)).limit(1),
-				DBObject.class,
-				"testItem"
-		);
+		prepareIndexTestItemStartTime();
+		prepareOptimizedTestItemCollection();
+		prepareIndexOptimizedPath();
+	}
 
-		if (null != testItem) {
-			mongoTemplate.aggregate(Aggregation.newAggregation(
-					context -> new BasicDBObject("$addFields", new BasicDBObject("pathLevel", new BasicDBObject("$size", "$path"))),
-					Aggregation.out("testItem")
-			), "testItem", Object.class);
-		}
-
-		List<DBObject> indexInfo = mongoTemplate.getCollection("log").getIndexInfo();
-
-		if (indexInfo.stream().noneMatch(it -> ((String) it.get("name")).equalsIgnoreCase("start_time"))) {
-			mongoTemplate.indexOps("testItem").ensureIndex(new Index("start_time", Sort.Direction.ASC).named("start_time"));
-		}
-
-		if (indexInfo.stream().noneMatch(it -> ((String) it.get("name")).equalsIgnoreCase("start_time_path"))) {
-			mongoTemplate.indexOps("testItem")
+	private void prepareIndexOptimizedPath() {
+		List<DBObject> indexInfoOptimized = mongoTemplate.getCollection(OPTIMIZED_TEST_COLLECTION).getIndexInfo();
+		if (indexInfoOptimized.stream().noneMatch(it -> ((String) it.get("name")).equalsIgnoreCase("migration_index"))) {
+			LOGGER.info("Adding 'migration_index' index to optimizedTest collection");
+			mongoTemplate.indexOps(OPTIMIZED_TEST_COLLECTION)
 					.ensureIndex(new CompoundIndexDefinition(new BasicDBObject("start_time", 1).append("pathLevel", 1)).named(
-							"start_time_path"));
+							"migration_index"));
+			LOGGER.info("Adding 'migration_index' index to optimizedTest collection successfully finished");
+		}
+		if (indexInfoOptimized.stream().noneMatch(it -> ((String) it.get("name")).equalsIgnoreCase("pathLevel"))) {
+			LOGGER.info("Adding 'pathLevel' index to optimizedTest collection");
+			mongoTemplate.indexOps(OPTIMIZED_TEST_COLLECTION)
+					.ensureIndex(new Index("pathLevel", Sort.Direction.ASC).named("pathLevel"));
+			LOGGER.info("Adding 'migration_index' index to optimizedTest collection successfully finished");
+		}
+	}
+
+	private void prepareOptimizedTestItemCollection() {
+		if (!mongoTemplate.collectionExists(OPTIMIZED_TEST_COLLECTION)) {
+			mongoTemplate.createCollection(OPTIMIZED_TEST_COLLECTION);
+		} else {
+			return;
 		}
 
+		Date fromDate = Date.from(LocalDate.parse(keepFrom).atStartOfDay(ZoneOffset.UTC).toInstant());
+
+		LOGGER.info("Adding 'pathLevel' field to optimizeTest collection");
+		mongoTemplate.aggregate(Aggregation.newAggregation(Aggregation.match(Criteria.where("start_time").gte(fromDate)),
+				context -> new BasicDBObject("$addFields", new BasicDBObject("pathLevel", new BasicDBObject("$size", "$path"))),
+				Aggregation.out(OPTIMIZED_TEST_COLLECTION)
+		), "testItem", Object.class);
+
+		LOGGER.info("Adding 'pathLevel' field to testItem collection successfully finished");
+	}
+
+	private void prepareIndexTestItemStartTime() {
+		List<DBObject> indexInfo = mongoTemplate.getCollection("testItem").getIndexInfo();
+		if (indexInfo.stream().noneMatch(it -> ((String) it.get("name")).equalsIgnoreCase("start_time"))) {
+			LOGGER.info("Adding 'start_time' index to testItem collection");
+			mongoTemplate.indexOps("testItem").ensureIndex(new Index("start_time", Sort.Direction.ASC).named("start_time"));
+			LOGGER.info("Adding 'start_time' index to testItem collection successfully finished");
+		}
 	}
 
 }

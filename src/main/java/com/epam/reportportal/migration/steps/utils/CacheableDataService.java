@@ -57,6 +57,12 @@ public class CacheableDataService {
 	@Autowired
 	private MongoTemplate mongoTemplate;
 
+	public void putMapping(String objectId, Long postgresId) {
+		if (objectId != null && postgresId != null) {
+			idsCache.put(objectId, postgresId);
+		}
+	}
+
 	public Long retrieveProjectId(String projectName) {
 		Long projectId = (Long) idsCache.getIfPresent(projectName);
 		if (projectId == null) {

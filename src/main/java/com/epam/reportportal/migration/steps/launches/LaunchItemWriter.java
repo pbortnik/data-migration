@@ -1,6 +1,7 @@
 package com.epam.reportportal.migration.steps.launches;
 
 import com.epam.reportportal.migration.steps.CommonItemWriter;
+import com.epam.reportportal.migration.steps.utils.CacheableDataService;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import org.bson.types.ObjectId;
@@ -11,8 +12,10 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -42,8 +45,13 @@ public class LaunchItemWriter implements ItemWriter<DBObject> {
 	@Autowired
 	private CommonItemWriter commonItemWriter;
 
+	@Autowired
+	private CacheableDataService cacheableDataService;
+
 	@Override
 	public void write(List<? extends DBObject> items) {
+		List<SqlParameterSource> attributes = new ArrayList<>();
+		List<SqlParameterSource> statistics = new ArrayList<>(items.size() * 4);
 		items.forEach(it -> {
 			jdbc.execute("SET session_replication_role = REPLICA;");
 			try {
@@ -51,11 +59,14 @@ public class LaunchItemWriter implements ItemWriter<DBObject> {
 						LaunchProviderUtils.LAUNCH_SOURCE_PROVIDER.createSqlParameterSource(it),
 						Long.class
 				);
-				commonItemWriter.writeTags((BasicDBList) it.get("tags"), INSERT_LAUNCH_ATTRIBUTES, id);
-				commonItemWriter.writeStatistics((DBObject) it.get("statistics"), INSERT_LAUNCH_STATISTICS, id);
+				cacheableDataService.putMapping(it.get("_id").toString(), id);
+				attributes.addAll(commonItemWriter.getAttributes((BasicDBList) it.get("tags"), id));
+				statistics.addAll(commonItemWriter.getStatisticsParams((DBObject) it.get("statistics"), id));
 			} catch (Exception e) {
 				LOGGER.debug(String.format("Exception while inserting launch with uuid %s", ((ObjectId) it.get("_id")).toString()));
 			}
 		});
+		jdbcTemplate.batchUpdate(INSERT_LAUNCH_ATTRIBUTES, attributes.toArray(new SqlParameterSource[0]));
+		jdbcTemplate.batchUpdate(INSERT_LAUNCH_STATISTICS, statistics.toArray(new SqlParameterSource[0]));
 	}
 }
