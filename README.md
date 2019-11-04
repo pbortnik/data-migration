@@ -1,8 +1,4 @@
-# Simple example of reading data from mongo database and storing it into Postgres. 
-
-## BEFORE MIGRATION
-The Jira or Rally plugins should be loaded to the RP v5. If they are not found, nothing would migrate.
-Specify RP_LAUNCH_KEEPFOR in milliseconds to migrate launches younger than. Specify -1 to store all launches.  
+# Report Portal settings migration from MongoDB to PostgreSQL. 
 
 
 ## Important information about migration

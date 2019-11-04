@@ -30,7 +30,7 @@ rp:
 
   binarystore:
     path: /data/storage
-    conatiner:
+    container:
       path: /data/storage
     master:
       host: seaweed-master
