@@ -38,6 +38,21 @@ public class JobsConfiguration {
 	private Step migrateAuthStep;
 
 	@Autowired
+	@Qualifier("migrateFilterStep")
+	private Step migrateFilterStep;
+
+	@Autowired
+	@Qualifier("migrateWidgetStep")
+	private Step migrateWidgetStep;
+
+	@Autowired
+	@Qualifier("migrateDashboardStep")
+	private Step migrateDashboardStep;
+
+	@Autowired
+	private Step migratePreferencesStep;
+
+	@Autowired
 	private MigrationJobExecutionListener migrationJobExecutionListener;
 
 	@Bean
@@ -48,7 +63,11 @@ public class JobsConfiguration {
 				.next(migrateTokensStep)
 				.next(migrateProjectsStep)
 				.next(migrateSettingsStep)
-				.next(migrateAuthStep);
+				.next(migrateAuthStep)
+				.next(migrateFilterStep)
+				.next(migrateWidgetStep)
+				.next(migrateDashboardStep)
+				.next(migratePreferencesStep);
 		return job.build();
 	}
 

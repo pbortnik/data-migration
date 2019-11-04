@@ -5,6 +5,7 @@ import com.epam.reportportal.migration.datastore.binary.impl.DataStoreUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.gridfs.GridFSDBFile;
+import org.apache.tika.io.IOUtils;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -16,6 +17,8 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Component;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -71,10 +74,17 @@ public class UserWriter implements ItemWriter<DBObject> {
 
 	private void saveUserAndPhoto(DBObject user) {
 		GridFSDBFile file = gridFsOperations.findOne(Query.query(Criteria.where("_id").is(user.get("photoId"))));
-		String attach = dataStoreService.save(Paths.get(ROOT_USER_PHOTO_DIR, user.get("_id").toString()).toString(), file.getInputStream());
+		byte[] bytes;
+		try {
+			bytes = IOUtils.toByteArray(file.getInputStream());
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+		String attach = dataStoreService.save(Paths.get(ROOT_USER_PHOTO_DIR, user.get("_id").toString()).toString(), new ByteArrayInputStream(bytes));
 		String attachThumb = dataStoreService.saveThumbnail(DataStoreUtils.buildThumbnailFileName(ROOT_USER_PHOTO_DIR,
 				user.get("_id").toString()
-		), file.getInputStream());
+		), new ByteArrayInputStream(bytes));
 
 		String metadata = getMetadata(file.getContentType(), (BasicDBObject) user.get("metaInfo"));
 		MapSqlParameterSource ps = getCommonSqlParameterSource(user, metadata);
