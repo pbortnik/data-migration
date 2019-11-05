@@ -21,7 +21,7 @@ public class LogSkipListener implements SkipListener<DBObject, DBObject> {
 
 	@Override
 	public void onSkipInWrite(DBObject item, Throwable t) {
-		LOGGER.warn(t.getMessage().substring(0, 1024) + "...");
+		LOGGER.warn("Skipping writing log with id " + item.get("_id").toString());
 	}
 
 	@Override
