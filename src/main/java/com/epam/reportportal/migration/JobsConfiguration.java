@@ -21,6 +21,10 @@ public class JobsConfiguration {
 	private JobBuilderFactory jobBuilderFactory;
 
 	@Autowired
+	@Qualifier("migrateBtsStep")
+	private Step migrateBtsStep;
+
+	@Autowired
 	@Qualifier("migrateUsersStep")
 	private Step migrateUserStep;
 
@@ -67,7 +71,8 @@ public class JobsConfiguration {
 				.next(migrateFilterStep)
 				.next(migrateWidgetStep)
 				.next(migrateDashboardStep)
-				.next(migratePreferencesStep);
+				.next(migratePreferencesStep)
+				.next(migrateBtsStep);
 		return job.build();
 	}
 
