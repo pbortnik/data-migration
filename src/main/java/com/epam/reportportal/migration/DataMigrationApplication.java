@@ -3,6 +3,7 @@ package com.epam.reportportal.migration;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -18,6 +19,12 @@ import java.util.concurrent.TimeUnit;
 
 @SpringBootApplication
 public class DataMigrationApplication {
+
+	@Value("${rp.pool.corePoolSize}")
+	private int corePoolSize;
+
+	@Value("${rp.pool.maxPoolSize}")
+	private int maxPoolSize;
 
 	@Bean
 	public Cache<String, Long> customStatisticsFieldsCache() {
@@ -65,8 +72,8 @@ public class DataMigrationApplication {
 	@Bean("threadPoolTaskExecutor")
 	public ThreadPoolTaskExecutor taskExecutor() {
 		ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
-		threadPoolTaskExecutor.setCorePoolSize(6);
-		threadPoolTaskExecutor.setMaxPoolSize(8);
+		threadPoolTaskExecutor.setCorePoolSize(corePoolSize);
+		threadPoolTaskExecutor.setMaxPoolSize(maxPoolSize);
 		return threadPoolTaskExecutor;
 	}
 

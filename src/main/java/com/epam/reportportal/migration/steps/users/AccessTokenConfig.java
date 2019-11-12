@@ -11,6 +11,7 @@ import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -38,6 +39,9 @@ public class AccessTokenConfig {
 
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
+
+	@Autowired
+	private TaskExecutor threadPoolTaskExecutor;
 
 	@Bean
 	public MongoItemReader<DBObject> tokensReader() {
@@ -68,6 +72,7 @@ public class AccessTokenConfig {
 		return stepBuilderFactory.get("tokens").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(tokensReader())
 				.processor(tokensProcessor())
 				.writer(tokensWriter())
+				.taskExecutor(threadPoolTaskExecutor)
 				.build();
 	}
 
