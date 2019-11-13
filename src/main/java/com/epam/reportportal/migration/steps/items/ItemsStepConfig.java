@@ -43,9 +43,14 @@ public class ItemsStepConfig {
 
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
-	private static final int CHUNK_SIZE = 10_000;
+	private static final int CHUNK_SIZE = 50_000;
+
+	private static final int LIMIT_SIZE = 10_000;
 
 	public static String OPTIMIZED_TEST_COLLECTION = "optimizeTest";
+
+	@Value("${rp.pool.corePoolSize}")
+	private int corePoolSize;
 
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
@@ -100,7 +105,7 @@ public class ItemsStepConfig {
 	public Step migrateItemStep(int i, DBObject minObject, DBObject maxObject) {
 		return stepBuilderFactory.get("item." + i)
 				.partitioner("slaveItemStep." + i, partitioner(i, minObject, maxObject))
-				.gridSize(18)
+				.gridSize(corePoolSize)
 				.step(slaveItemStep(i))
 				.taskExecutor(threadPoolTaskExecutor)
 				.build();
@@ -137,7 +142,7 @@ public class ItemsStepConfig {
 		itemReader.setSort(new HashMap<String, Sort.Direction>() {{
 			put("start_time", Sort.Direction.ASC);
 		}});
-		itemReader.setLimit(CHUNK_SIZE);
+		itemReader.setLimit(LIMIT_SIZE);
 		itemReader.setDateField("start_time");
 		itemReader.setCurrentDate(new Date(minTime));
 		itemReader.setLatestDate(new Date(maxTime));

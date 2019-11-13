@@ -23,10 +23,6 @@ public class JobsConfiguration {
 	private JobBuilderFactory jobBuilderFactory;
 
 	@Autowired
-	@Qualifier("migrateBtsStep")
-	private Step migrateBtsStep;
-
-	@Autowired
 	@Qualifier("migrateLaunchStep")
 	private Step migrateLaunchStep;
 
@@ -49,8 +45,7 @@ public class JobsConfiguration {
 	public Job job() {
 		SimpleJobBuilder job = jobBuilderFactory.get("migrationDataJob")
 				.listener(migrationJobExecutionListener)
-				.start(migrateBtsStep)
-				.next(migrateLaunchStep)
+				.start(migrateLaunchStep)
 				.next(migrateLaunchNumberStep);
 		for (Step s : levelItemsFlow) {
 			job = job.next(s);

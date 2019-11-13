@@ -40,10 +40,15 @@ public class LogStepConfig {
 
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
-	private static final int CHUNK_SIZE = 10_000;
+	private static final int CHUNK_SIZE = 50_000;
+
+	private static final int LIMIT_SIZE = 10_000;
 
 	@Value("${rp.log.keepFrom}")
 	private String keepFrom;
+
+	@Value("${rp.pool.corePoolSize}")
+	private int corePoolSize;
 
 	@Autowired
 	private MongoTemplate mongoTemplate;
@@ -75,7 +80,7 @@ public class LogStepConfig {
 		prepareCollectionForReading();
 		return stepBuilderFactory.get("log")
 				.partitioner("slaveLogStep", logPartitioner(findStartObject(fromDate), findLastObject(fromDate)))
-				.gridSize(32)
+				.gridSize(corePoolSize)
 				.step(slaveLogStep())
 				.taskExecutor(threadPoolTaskExecutor)
 				.listener(chunkCountListener)
@@ -114,7 +119,7 @@ public class LogStepConfig {
 		itemReader.setSort(new HashMap<String, Sort.Direction>() {{
 			put("logTime", Sort.Direction.ASC);
 		}});
-		itemReader.setLimit(CHUNK_SIZE);
+		itemReader.setLimit(LIMIT_SIZE);
 		itemReader.setDateField("logTime");
 		itemReader.setCurrentDate(new Date(minTime));
 		itemReader.setLatestDate(new Date(maxTime));
