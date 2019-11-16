@@ -98,11 +98,11 @@ public class ProjectStepConfig {
 		attributes.put("keepLogs", 3L);
 		attributes.put("keepScreenshots", 4L);
 
-		attributes.put("isAutoAnalyzerEnabled", 10L);
-		attributes.put("analyzerMode", 11L);
+		attributes.put("isAutoAnalyzerEnabled", 11L);
+		attributes.put("analyzerMode", 12L);
 
-		attributes.put("emailEnabled", 12L);
-		attributes.put("from", 13L);
+		attributes.put("emailEnabled", 13L);
+		attributes.put("from", 14L);
 		return attributes;
 	}
 }
