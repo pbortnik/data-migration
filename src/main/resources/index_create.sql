@@ -27,6 +27,7 @@ ALTER TABLE log
 CREATE INDEX IF NOT EXISTS log_ti_idx ON log (item_id);
 CREATE INDEX IF NOT EXISTS log_message_trgm_idx ON log USING gin (log_message gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS log_uuid_idx ON log USING hash (uuid);
+CREATE INDEX IF NOT EXISTS log_attach_id_idx ON log (attachment_id);
 
 ALTER TABLE statistics
     ADD CONSTRAINT statistics_statistics_field_id_fkey FOREIGN KEY (statistics_field_id) REFERENCES statistics_field (sf_id) ON DELETE CASCADE,

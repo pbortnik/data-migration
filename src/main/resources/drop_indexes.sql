@@ -23,6 +23,7 @@ ALTER TABLE log
 DROP INDEX IF EXISTS log_ti_idx;
 DROP INDEX IF EXISTS log_message_trgm_idx;
 DROP INDEX IF EXISTS log_uuid_idx;
+DROP INDEX IF EXISTS log_attach_id_idx;
 ALTER TABLE statistics
     DROP CONSTRAINT IF EXISTS statistics_statistics_field_id_fkey,
     DROP CONSTRAINT IF EXISTS unique_stats_item,
