@@ -31,7 +31,7 @@ public class ProjectItemWriter implements ItemWriter<DBObject> {
 
 	private static final String INSERT_PROJECT_ISSUE_TYPES = "INSERT INTO issue_type_project (project_id, issue_type_id) VALUES (:pr, :it)";
 
-	private static final String INSERT_DEFAULT_ANALYZER_CONFIG = "INSERT INTO project_attribute(attribute_id, value, project_id) VALUES (5, 1, :pr), (6, 1, :pr), (7, 95, :pr), (8, 4, :pr), (9, FALSE, :pr), (2, '3 months', :pr), (14, FALSE, :pr)";
+	private static final String INSERT_DEFAULT_ANALYZER_CONFIG = "INSERT INTO project_attribute(attribute_id, value, project_id) VALUES (5, 1, :pr), (6, 1, :pr), (7, 95, :pr), (8, 4, :pr), (9, FALSE, :pr), (2, '3 months', :pr)";
 
 	private static final String INSERT_PROJECT_ATTRIBUTES = "INSERT INTO project_attribute(attribute_id, value, project_id) VALUES (:attr, :val, :pr)";
 

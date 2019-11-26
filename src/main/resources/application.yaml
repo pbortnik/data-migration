@@ -32,15 +32,12 @@ rp:
     path: /data/storage
     container:
       path: /data/storage
-    master:
-      host: seaweed-master
-      port: 9333
     minio:
-      endpoint: http://play.min.io
-      accessKey: default
-      secretKey: default
-    # could be one of [seaweed, filesystem, minio]
-    type: filesystem
+      endpoint: http://localhost:9000
+      accessKey: minio
+      secretKey: minio123
+    # could be one of [filesystem, minio]
+    type: minio
 
   ##keep launches from date in ISO_LOCAL_DATE (yyyy-MM-dd)
   launch:
