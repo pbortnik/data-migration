@@ -35,9 +35,9 @@ task resolveDependencies {
 dependencies {
     compile 'org.springframework.data:spring-data-mongodb:1.10.9.RELEASE'
 
-    compile('org.springframework.boot:spring-boot-starter-batch:2.2.1.RELEASE')
-    compile group: 'org.springframework.batch', name: 'spring-batch-core', version: '4.2.0.RELEASE'
-    compile group: 'org.springframework.batch', name: 'spring-batch-infrastructure', version: '4.2.0.RELEASE'
+    compile('org.springframework.boot:spring-boot-starter-batch:2.1.7.RELEASE')
+//    compile group: 'org.springframework.batch', name: 'spring-batch-core', version: '4.2.0.RELEASE'
+//    compile group: 'org.springframework.batch', name: 'spring-batch-infrastructure', version: '4.2.0.RELEASE'
 
     compile 'com.epam.reportportal:commons:5.0.0-BETA-2'
     compile 'io.minio:minio:6.0.10'
@@ -47,7 +47,7 @@ dependencies {
 
     compile 'org.apache.tika:tika-parsers:1.22'
 
-    compile('org.springframework.boot:spring-boot-starter-jdbc:2.2.1.RELEASE')
+    compile('org.springframework.boot:spring-boot-starter-jdbc:2.1.7.RELEASE')
     compile('org.postgresql:postgresql')
 
 }

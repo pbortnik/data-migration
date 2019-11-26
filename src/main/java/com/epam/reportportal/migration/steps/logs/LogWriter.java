@@ -5,14 +5,19 @@ import com.epam.reportportal.migration.datastore.filesystem.FilePathGenerator;
 import com.mongodb.DBObject;
 import com.mongodb.gridfs.GridFSDBFile;
 import org.apache.tika.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.ItemSqlParameterSourceProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -32,6 +37,8 @@ import static com.epam.reportportal.migration.steps.utils.MigrationUtils.toUtc;
  */
 @Component
 public class LogWriter implements ItemWriter<DBObject> {
+
+	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
 	private static final String INSERT_LOG = "INSERT INTO log (uuid, log_time, log_message, item_id, last_modified, log_level) "
 			+ "VALUES (:uid, :lt, :lmsg, :item, :lm, :ll) ON CONFLICT DO NOTHING";
@@ -54,7 +61,11 @@ public class LogWriter implements ItemWriter<DBObject> {
 	@Autowired
 	private FilePathGenerator filePathGenerator;
 
+	@Autowired
+	private LogWriter logWriter;
+
 	@Override
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void write(List<? extends DBObject> items) {
 
 		Map<Boolean, ? extends List<? extends DBObject>> splitted = items.stream()
@@ -65,33 +76,44 @@ public class LogWriter implements ItemWriter<DBObject> {
 				.map(LOG_SOURCE_PROVIDER::createSqlParameterSource)
 				.toArray(SqlParameterSource[]::new);
 
-		jdbcTemplate.batchUpdate(INSERT_LOG, values);
+		try {
+			jdbcTemplate.batchUpdate(INSERT_LOG, values);
 
-		splitted.get(false).forEach(logWithBinary -> {
-			GridFSDBFile file = (GridFSDBFile) logWithBinary.get("file");
+			splitted.get(false).forEach(logWithBinary -> {
+				GridFSDBFile file = (GridFSDBFile) logWithBinary.get("file");
 
-			byte[] bytes;
-			try {
-				bytes = IOUtils.toByteArray(file.getInputStream());
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
+				byte[] bytes;
+				try {
+					bytes = IOUtils.toByteArray(file.getInputStream());
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
 
-			String commonPath = Paths.get(String.valueOf(logWithBinary.get("projectId")), filePathGenerator.generate()).toString();
-			String targetPath = Paths.get(commonPath, file.getFilename()).toString();
+				String commonPath = Paths.get(String.valueOf(logWithBinary.get("projectId")), filePathGenerator.generate()).toString();
+				String targetPath = Paths.get(commonPath, file.getFilename()).toString();
 
-			String path = dataStoreService.save(targetPath, new ByteArrayInputStream(bytes));
+				String path = dataStoreService.save(targetPath, new ByteArrayInputStream(bytes));
 
-			String pathThumbnail = createThumbnail(new ByteArrayInputStream(bytes), file.getContentType(), file.getFilename(), commonPath);
+				String pathThumbnail = createThumbnail(new ByteArrayInputStream(bytes),
+						file.getContentType(),
+						file.getFilename(),
+						commonPath
+				);
 
-			Long attachmentId = jdbcTemplate.queryForObject(INSERT_ATTACH,
-					attachSourceProvider(logWithBinary, file, path, pathThumbnail),
-					Long.class
-			);
-			MapSqlParameterSource sqlParameterSource = (MapSqlParameterSource) LOG_SOURCE_PROVIDER.createSqlParameterSource(logWithBinary);
-			sqlParameterSource.addValue("attachId", attachmentId);
-			jdbcTemplate.update(INSERT_LOG_WITH_ATTACH, sqlParameterSource);
-		});
+				Long attachmentId = jdbcTemplate.queryForObject(INSERT_ATTACH,
+						attachSourceProvider(logWithBinary, file, path, pathThumbnail),
+						Long.class
+				);
+				MapSqlParameterSource sqlParameterSource = (MapSqlParameterSource) LOG_SOURCE_PROVIDER.createSqlParameterSource(
+						logWithBinary);
+				sqlParameterSource.addValue("attachId", attachmentId);
+				jdbcTemplate.update(INSERT_LOG_WITH_ATTACH, sqlParameterSource);
+			});
+		} catch (DataIntegrityViolationException e) {
+			LOGGER.warn(e.getClass().toString());
+			items.forEach(it -> it.put("logMsg", it.get("logMsg").toString().replaceAll("\u0000", "")));
+			logWriter.write(items);
+		}
 	}
 
 	private String createThumbnail(InputStream inputStream, String contentType, String fileName, String commonPath) {
