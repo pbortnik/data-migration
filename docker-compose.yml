@@ -1,0 +1,42 @@
+## You can generate a custom docker compose file automatically on http://reportportal.io/download (Step 2)
+
+## This is example of Docker Compose for ReportPortal
+## Do not forget to configure data volumes for production usage
+
+## Execute 'docker-compose -f docker-compose-local.yml -p reportportal up -d --force-recreate' --build
+## to start all containers in daemon mode
+## Where:
+##      '-f docker-compose-local.yml' -- specifies this compose file
+##      '-p reportportal' -- specifies container's prefix (project name)
+##      '-d' -- enables daemon mode
+##      '--force-recreate' -- forces re-recreating of all containers
+##      '--build' -- build images before starting containers.
+version: '2.4'
+services:
+
+  data-migration:
+    image: pbortnik/data-migration:latest
+    #volumes:
+    #  - ./data/storage:/data/storage
+    environment:
+      # Postgres params
+      RP_DB_HOST: postgres
+      # RP_DB_PORT: 5432
+      # RP_DB_NAME: reportportal
+      # Api containreg binarystore path
+      # RP_BINARYSTORE_CONTAINER_PATH: /data/storage
+      # RP_BINARYSTORE_PATH: /data/storage
+      RP_BINARYSTORE_TYPE: minio
+      RP_BINARYSTORE_MINIO_ENDPOINT: http://minio:9000
+      RP_BINARYSTORE_MINIO_ACCESSKEY: minio
+      RP_BINARYSTORE_MINIO_SECRETKEY: minio123
+
+      # Users with last loging later than will be migrated
+      RP_LAUNCH_KEEPFROM: '2019-03-30'
+      RP_TEST_KEEPFROM: '2019-03-30'
+      RP_LOG_KEEPFROM: '2019-03-30'
+      RP_ATTACH_KEEPFROM: '2019-03-30'
+
+      # Mongo params
+      RP_MONGODB_DATABASE: reportportal
+      RP_MONGODB_URI: mongodb://user:password@host:port
