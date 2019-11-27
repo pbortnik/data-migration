@@ -6,6 +6,7 @@ import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,9 @@ public class MigrationJobExecutionListener implements JobExecutionListener {
 	@Autowired
 	@Qualifier("threadPoolTaskExecutor")
 	private ThreadPoolTaskExecutor taskExecutor;
+
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
 	@Autowired
 	private DataSource dataSource;

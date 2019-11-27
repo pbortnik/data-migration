@@ -87,8 +87,8 @@ services:
       - ./data/postgres:/var/lib/postgresql/data
     restart: on-failure
     # If you need to access the DB locally. Could be a security risk to expose DB.
-    # ports:
-    #  - "5432:5432"
+    ports:
+      - "5432:5432"
     command:
       -c checkpoint_completion_target=0.9
       -c work_mem=96MB
@@ -130,7 +130,7 @@ services:
       RP_USER_KEEPFROM: '2019-03-30'
       # Mongodb params
       RP_MONGODB_DATABASE: reportportal
-      RP_MONGODB_URI: mongodb://10.6.74.138:27017
+      RP_MONGODB_URI: mongodb://user:password@host:port
 
 
   rabbitmq:
