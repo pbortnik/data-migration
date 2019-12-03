@@ -34,5 +34,4 @@ public class DatePartitioner {
 
 		return result;
 	}
-
 }

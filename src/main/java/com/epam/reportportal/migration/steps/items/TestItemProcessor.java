@@ -51,7 +51,9 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 		if (retrieveLaunch(item) == null) {
 			return null;
 		}
-		retrieveParent(item);
+		if (retrieveParent(item) == null) {
+			return null;
+		}
 		retrieveParentPath(item);
 		retrieveIssue(item);
 		return item;
@@ -73,6 +75,11 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 			return item;
 		}
 		Long parentId = cacheableDataService.retrieveItemId(parent);
+
+		if (parentId == null && (Integer) item.get("pathLevel") != 0) {
+			return null;
+		}
+
 		item.put("parentId", parentId);
 		return item;
 	}
@@ -88,14 +95,16 @@ public class TestItemProcessor implements ItemProcessor<DBObject, DBObject> {
 					locatorsFieldsCache.put(locator, issueTypeId);
 				}
 				issue.put("issueTypeId", issueTypeId);
-				BasicDBList tickets = (BasicDBList) issue.get("externalSystemIssues");
-				if (!CollectionUtils.isEmpty(tickets)) {
-					tickets = retrieveBts(tickets);
-					issue.put("externalSystemIssues", tickets);
-				}
 			} catch (EmptyResultDataAccessException e) {
-				LOGGER.debug(String.format("Issue type with locator '%s' not found. It is ignored.", issue));
+				LOGGER.debug(String.format("Issue type with locator '%s' not found. Used default.", issue));
+				issue.put("issueTypeId", 1L);
 			}
+			BasicDBList tickets = (BasicDBList) issue.get("externalSystemIssues");
+			if (!CollectionUtils.isEmpty(tickets)) {
+				tickets = retrieveBts(tickets);
+				issue.put("externalSystemIssues", tickets);
+			}
+
 		}
 	}
 

@@ -76,7 +76,7 @@ public class LaunchStepConfig {
 	public Step migrateLaunchStep() {
 		return stepBuilderFactory.get("launch")
 				.partitioner("slaveLaunchStep", datePartitioning)
-				.gridSize(12)
+				.gridSize(6)
 				.step(slaveLaunchStep())
 				.taskExecutor(threadPoolTaskExecutor)
 				.listener(chunkCountListener)

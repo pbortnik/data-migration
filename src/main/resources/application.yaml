@@ -5,6 +5,9 @@ spring:
       uri: ${rp.mongodb.uri}
 
 rp:
+  pool:
+    corePoolSize: 6
+    maxPoolSize: 8
   mongodb:
     uri: mongodb://localhost:27017
     database: reportportal
@@ -15,7 +18,7 @@ rp:
     jdbcUrl: ${rp.db.url}
     username: ${rp.db.user}
     password: ${rp.db.pass}
-    maximumPoolSize: 50
+    maximumPoolSize: 18
 
   db:
     url: jdbc:postgresql://${rp.db.host}:${rp.db.port}/${rp.db.name}
@@ -26,16 +29,13 @@ rp:
     pass: rppass
 
   binarystore:
-    path: /data/storage
+    path: /Users/pavel_bortnik/ReportPortal5/data/storage
     conatiner:
       path: /data/storage
-    master:
-      host: seaweed-master
-      port: 9333
     minio:
-      endpoint: http://play.min.io
-      accessKey: default
-      secretKey: default
+      endpoint: http://localhost:9000
+      accessKey: minio
+      secretKey: minio123
     # could be one of [seaweed, filesystem, minio]
     type: filesystem
 
