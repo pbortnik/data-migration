@@ -1,6 +1,6 @@
 FROM hirokimatsumoto/alpine-openjdk-11
 
-ENV JAVA_OPTS="-Xmx16000m -Djava.security.egd=file:/dev/./urandom"
+ENV JAVA_OPTS="-Xmx7128m -Djava.security.egd=file:/dev/./urandom"
 ENV JAVA_APP=/app.jar
 
 RUN echo $'#!/bin/sh \n\
