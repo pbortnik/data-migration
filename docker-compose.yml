@@ -127,7 +127,7 @@ services:
       RP_BINARYSTORE_MINIO_SECRETKEY: minio123
 
       ## Leep users from last login date in ISO_LOCAL_DATE (yyyy-MM-dd)
-      RP_USER_KEEPFROM: '2019-03-30'
+      RP_USER_KEEPFROM: '2000-01-01'
       # Mongodb params
       RP_MONGODB_DATABASE: reportportal
       RP_MONGODB_URI: mongodb://user:password@host:port

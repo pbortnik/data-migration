@@ -112,6 +112,9 @@ public class WidgetStepConfig {
 	@PostConstruct
 	public void initialQueries() {
 		try {
+			if (mongoTemplate.collectionExists("widgetMapping")) {
+				mongoTemplate.dropCollection("widgetMapping");
+			}
 			ACL_CLASS = jdbcTemplate.queryForObject(
 					"INSERT INTO acl_class (class, class_id_type) VALUES ('com.epam.ta.reportportal.entity.widget.Widget','java.lang.Long') RETURNING id",
 					Long.class

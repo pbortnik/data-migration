@@ -34,14 +34,7 @@ public class ProjectItemProcessor implements ItemProcessor<DBObject, DBObject> {
 	}
 
 	private DBObject extractUserIds(DBObject project) {
-		List<DBObject> users = (List<DBObject>) project.get("users");
-
-		if (CollectionUtils.isEmpty(users)) {
-			LOGGER.debug(String.format("Project '%s' hasn't users. It is ignored", project.get("_id")));
-			return null;
-		}
-
-		List<DBObject> filtered = users.stream()
+		List<DBObject> filtered = ((List<DBObject>) project.get("users")).stream()
 				.peek(user -> {
 					try {
 						Long userID = jdbcTemplate.queryForObject(SELECT_USER_ID,
@@ -59,6 +52,11 @@ public class ProjectItemProcessor implements ItemProcessor<DBObject, DBObject> {
 				.stream()
 				.map(it -> it.stream().findFirst().get())
 				.collect(Collectors.toList());
+
+		if (CollectionUtils.isEmpty(filtered)) {
+			LOGGER.debug(String.format("Project '%s' hasn't users. It is ignored", project.get("_id")));
+			return null;
+		}
 
 		project.put("users", filtered);
 		return project;

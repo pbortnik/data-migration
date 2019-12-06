@@ -55,6 +55,9 @@ public class FilterStepConfig {
 	}
 
 	private void executeInitialQueries() {
+		if (mongoTemplate.collectionExists("filterMapping")) {
+			mongoTemplate.dropCollection("filterMapping");
+		}
 		try {
 			ACL_CLASS = jdbcTemplate.queryForObject(
 					"INSERT INTO acl_class (class, class_id_type) VALUES ('com.epam.ta.reportportal.entity.filter.UserFilter','java.lang.Long') RETURNING id",
