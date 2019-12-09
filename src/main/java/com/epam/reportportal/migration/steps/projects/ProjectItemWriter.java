@@ -4,6 +4,7 @@ import com.mongodb.DBObject;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -27,11 +28,12 @@ public class ProjectItemWriter implements ItemWriter<DBObject> {
 
 	private static final String INSERT_PROJECT_USER = "INSERT INTO project_user (user_id, project_id, project_role) VALUES (:userId, :projectId, :projectRole::PROJECT_ROLE_ENUM)";
 
-	private static final String INSERT_ISSUE_TYPES = "INSERT INTO reportportal.public.issue_type (issue_group_id, locator, issue_name, abbreviation, hex_color) VALUES (:groupId, :locator, :longName, :shortName, :hexColor) RETURNING id";
+	private static final String INSERT_ISSUE_TYPES = "INSERT INTO reportportal.public.issue_type (issue_group_id, locator, issue_name, "
+			+ "abbreviation, hex_color) VALUES (:groupId, :locator, :longName, :shortName, :hexColor) ON CONFLICT DO NOTHING RETURNING id";
 
 	private static final String INSERT_PROJECT_ISSUE_TYPES = "INSERT INTO issue_type_project (project_id, issue_type_id) VALUES (:pr, :it)";
 
-	private static final String INSERT_DEFAULT_ANALYZER_CONFIG = "INSERT INTO project_attribute(attribute_id, value, project_id) VALUES (5, 1, :pr), (6, 1, :pr), (7, 95, :pr), (8, 4, :pr), (9, FALSE, :pr), (2, '3 months', :pr)";
+	private static final String INSERT_DEFAULT_ANALYZER_CONFIG = "INSERT INTO project_attribute(attribute_id, value, project_id) VALUES (5, 1, :pr), (6, 1, :pr), (7, 95, :pr), (8, 4, :pr), (9, FALSE, :pr)";
 
 	private static final String INSERT_PROJECT_ATTRIBUTES = "INSERT INTO project_attribute(attribute_id, value, project_id) VALUES (:attr, :val, :pr)";
 
@@ -42,6 +44,9 @@ public class ProjectItemWriter implements ItemWriter<DBObject> {
 	private static final String INSERT_LAUNCH_NAMES = "INSERT INTO launch_names (sender_case_id, launch_name) VALUES (:sc, :val)";
 
 	private static final String INSERT_ATTRIBUTE_RULES = "INSERT INTO launch_attribute_rules (sender_case_id, value) VALUES (:sc, :val)";
+
+	@Value("${rp.launch.keepAttr}")
+	private String keepAttr;
 
 	@Autowired
 	private NamedParameterJdbcTemplate jdbcTemplate;
@@ -114,10 +119,13 @@ public class ProjectItemWriter implements ItemWriter<DBObject> {
 				issueType.put("groupId", issueGroups.get(issueGroup));
 				issueTypeId = jdbcTemplate.queryForObject(INSERT_ISSUE_TYPES, issueType, Long.class);
 			}
+			if (issueTypeId == null) {
+				return null;
+			}
 			map.put("pr", projectId);
 			map.put("it", issueTypeId);
 			return map;
-		}).collect(Collectors.toList());
+		}).filter(Objects::nonNull).collect(Collectors.toList());
 	}
 
 	private void writeProjectConfiguration(DBObject project, Long projectId) {
@@ -134,7 +142,11 @@ public class ProjectItemWriter implements ItemWriter<DBObject> {
 			if (value != null) {
 				map.put("val", value);
 			} else {
-				map.put("val", ProjectAttributeEnum.findByAttributeName(attribute).get().getDefaultValue());
+				ProjectAttributeEnum projectAttributeEnum = ProjectAttributeEnum.findByAttributeName(attribute).get();
+				if (projectAttributeEnum.equals(ProjectAttributeEnum.KEEP_LAUNCHES)) {
+					map.put("val", keepAttr);
+				}
+				map.put("val", projectAttributeEnum.getDefaultValue());
 			}
 
 			map.put("pr", projectId);

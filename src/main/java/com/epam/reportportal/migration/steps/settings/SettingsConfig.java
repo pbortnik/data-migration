@@ -19,6 +19,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -137,7 +138,11 @@ public class SettingsConfig {
 			paramsSource.addValue("tp", EMAIL_INTEGRAION_ID);
 			paramsSource.addValue("en", serverEmailDetails.get("enabled"));
 			paramsSource.addValue("par", params.toString());
-			paramsSource.addValue("cr", serverEmailDetails.get("username"));
+			Object creator = serverEmailDetails.get("username");
+			if (creator == null) {
+				creator = serverEmailDetails.get("from");
+			}
+			paramsSource.addValue("cr", Optional.ofNullable(creator).orElse(""));
 			namedParameterJdbcTemplate.queryForObject(INSERT_INTEGRATION, paramsSource, Long.class);
 		}
 	}

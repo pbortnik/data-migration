@@ -3,6 +3,7 @@ package com.epam.reportportal.migration.steps.pref;
 import com.epam.reportportal.migration.steps.utils.CacheableDataService;
 import com.epam.reportportal.migration.steps.utils.MigrationUtils;
 import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.bson.types.ObjectId;
 import org.springframework.batch.core.ChunkListener;
@@ -21,6 +22,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -62,6 +64,13 @@ public class PreferencesConfig {
 	@Bean
 	public ItemProcessor<DBObject, DBObject> preferencesProcessor() {
 		return item -> {
+			BasicDBObject launchTabs = (BasicDBObject) item.get("launchTabs");
+			if (launchTabs == null) {
+				return null;
+			}
+			if (CollectionUtils.isEmpty((BasicDBList) launchTabs.get("filters"))) {
+				return null;
+			}
 			Long projectId = cacheableDataService.retrieveProjectId((String) item.get("projectRef"));
 			Long userId = cacheableDataService.retrieveUser((String) item.get("userRef"));
 			if (projectId != null && userId != null) {
@@ -79,6 +88,7 @@ public class PreferencesConfig {
 			Set<ObjectId> mongoIds = items.stream()
 					.map(it -> it.get("launchTabs"))
 					.flatMap(it -> ((BasicDBList) ((DBObject) it).get("filters")).stream())
+					.filter(Objects::nonNull)
 					.map(String.class::cast)
 					.map(ObjectId::new)
 					.collect(Collectors.toSet());

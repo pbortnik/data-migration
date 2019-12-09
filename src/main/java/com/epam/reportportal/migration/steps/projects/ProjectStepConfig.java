@@ -95,6 +95,7 @@ public class ProjectStepConfig {
 		Map<String, Long> attributes = new HashMap<>(14);
 
 		attributes.put("interruptJobTime", 1L);
+		attributes.put("keepLaunches", 2L);
 		attributes.put("keepLogs", 3L);
 		attributes.put("keepScreenshots", 4L);
 
