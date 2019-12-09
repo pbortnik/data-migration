@@ -40,4 +40,4 @@ services:
 
       # Mongo params
       RP_MONGODB_DATABASE: reportportal
-      RP_MONGODB_URI: mongodb://RPAdmin:Q1D2oJOM4T1@ec2-3-120-229-171.eu-central-1.compute.amazonaws.com:27017
+      RP_MONGODB_URI: mongodb://user:password@host:port
