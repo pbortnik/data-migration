@@ -178,18 +178,17 @@ public class ItemsStepConfig {
 		}
 		if (indexInfoOptimized.stream().noneMatch(it -> ((String) it.get("name")).equalsIgnoreCase("pathLevel"))) {
 			LOGGER.info("Adding 'pathLevel' index to optimizedTest collection");
-			mongoTemplate.indexOps(OPTIMIZED_TEST_COLLECTION)
-					.ensureIndex(new Index("pathLevel", Sort.Direction.ASC).named("pathLevel"));
+			mongoTemplate.indexOps(OPTIMIZED_TEST_COLLECTION).ensureIndex(new Index("pathLevel", Sort.Direction.ASC).named("pathLevel"));
 			LOGGER.info("Adding 'migration_index' index to optimizedTest collection successfully finished");
 		}
 	}
 
 	private void prepareOptimizedTestItemCollection() {
-		if (!mongoTemplate.collectionExists(OPTIMIZED_TEST_COLLECTION)) {
-			mongoTemplate.createCollection(OPTIMIZED_TEST_COLLECTION);
-		} else {
-			return;
+		if (mongoTemplate.collectionExists(OPTIMIZED_TEST_COLLECTION)) {
+			mongoTemplate.dropCollection(OPTIMIZED_TEST_COLLECTION);
 		}
+
+		mongoTemplate.createCollection(OPTIMIZED_TEST_COLLECTION);
 
 		Date fromDate = Date.from(LocalDate.parse(keepFrom).atStartOfDay(ZoneOffset.UTC).toInstant());
 
