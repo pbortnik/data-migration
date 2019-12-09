@@ -39,7 +39,7 @@ public class LogStepConfig {
 
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
-	private static final int CHUNK_SIZE = 50_000;
+	private static final int CHUNK_SIZE = 10_000;
 
 	private static final int LIMIT_SIZE = 10_000;
 

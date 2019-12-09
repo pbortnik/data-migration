@@ -28,7 +28,7 @@ import java.util.List;
 @Configuration
 public class LaunchStepConfig {
 
-	private static final int CHUNK_SIZE = 5_000;
+	private static final int CHUNK_SIZE = 1_000;
 
 	@Value("${rp.launch.keepFrom}")
 	private String keepFrom;

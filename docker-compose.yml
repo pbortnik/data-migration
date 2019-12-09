@@ -19,6 +19,7 @@ services:
     #volumes:
     #  - ./data/storage:/data/storage
     environment:
+      JAVA_OPTS: "-Xms8g -Xmx12g -Djava.security.egd=file:/dev/./urandom"
       # Postgres params
       RP_DB_HOST: postgres
       # RP_DB_PORT: 5432
@@ -32,11 +33,11 @@ services:
       RP_BINARYSTORE_MINIO_SECRETKEY: minio123
 
       # Users with last loging later than will be migrated
-      RP_LAUNCH_KEEPFROM: '2019-03-30'
-      RP_TEST_KEEPFROM: '2019-03-30'
-      RP_LOG_KEEPFROM: '2019-03-30'
-      RP_ATTACH_KEEPFROM: '2019-03-30'
+      RP_LAUNCH_KEEPFROM: '2000-01-01'
+      RP_TEST_KEEPFROM: '2000-01-01'
+      RP_LOG_KEEPFROM: '2000-01-01'
+      RP_ATTACH_KEEPFROM: '2000-01-01'
 
       # Mongo params
       RP_MONGODB_DATABASE: reportportal
-      RP_MONGODB_URI: mongodb://user:password@host:port
+      RP_MONGODB_URI: mongodb://RPAdmin:Q1D2oJOM4T1@ec2-3-120-229-171.eu-central-1.compute.amazonaws.com:27017

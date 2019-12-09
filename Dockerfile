@@ -1,16 +1,6 @@
-FROM hirokimatsumoto/alpine-openjdk-11
-
-ENV JAVA_OPTS="-Xmx7128m -Djava.security.egd=file:/dev/./urandom"
+FROM adoptopenjdk/openjdk11:latest
 ENV JAVA_APP=/app.jar
-
-RUN echo $'#!/bin/sh \n\
-exec java $JAVA_OPTS -jar $JAVA_APP' > /start.sh && chmod +x /start.sh
-
-VOLUME /tmp
 ADD build/libs/service-cleaner.jar $JAVA_APP
-
 RUN sh -c 'touch $JAVA_APP'
-
+ENTRYPOINT exec java $JAVA_OPTS -jar $JAVA_APP
 EXPOSE 2020
-
-ENTRYPOINT ["/start.sh"]
