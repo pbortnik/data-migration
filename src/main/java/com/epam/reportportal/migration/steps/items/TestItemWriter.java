@@ -4,8 +4,6 @@ import com.epam.reportportal.migration.steps.CommonItemWriter;
 import com.epam.reportportal.migration.steps.utils.CacheableDataService;
 import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,16 +32,14 @@ import static com.epam.reportportal.migration.steps.utils.MigrationUtils.toUtc;
 @Component("testItemWriter")
 public class TestItemWriter implements ItemWriter<DBObject> {
 
-	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
-
 	private static final String INSERT_ITEM = "INSERT INTO test_item (item_id, uuid, name, type, start_time, description, last_modified,"
-			+ "unique_id, has_children, has_retries, parent_id, launch_id, test_case_id, path) VALUES (:id, :uid, :nm, :tp::TEST_ITEM_TYPE_ENUM,"
-			+ ":st, :descr, :lm, :uq, :ch, :rtr, :par, :lid, :tci, :pth::LTREE) ON CONFLICT DO NOTHING";
+			+ "unique_id, has_children, has_retries, parent_id, launch_id, test_case_hash, path) VALUES (:id, :uid, :nm, :tp::TEST_ITEM_TYPE_ENUM,"
+			+ ":st, :descr, :lm, :uq, :ch, :rtr, :par, :lid, :thash, :pth::LTREE) ON CONFLICT DO NOTHING";
 
 	private static final String INSERT_RETRY_ITEM =
 			"INSERT INTO test_item (item_id, uuid, name, type, start_time, description, last_modified,"
-					+ "unique_id, has_children, parent_id, retry_of, path) VALUES (:id, :uid, :nm, :tp::TEST_ITEM_TYPE_ENUM,"
-					+ ":st, :descr, :lm, :uq, :ch, :par, :rtrof, :pth::LTREE) ON CONFLICT DO NOTHING";
+					+ "unique_id, has_children, parent_id, retry_of, path, test_case_hash) VALUES (:id, :uid, :nm, :tp::TEST_ITEM_TYPE_ENUM,"
+					+ ":st, :descr, :lm, :uq, :ch, :par, :rtrof, :pth::LTREE, :thash) ON CONFLICT DO NOTHING";
 
 	private static final String INSERT_ITEM_RESULTS = "INSERT INTO test_item_results (result_id, status, end_time, duration) VALUES "
 			+ "(:id, :st::STATUS_ENUM, :ed, EXTRACT(EPOCH FROM (:ed::TIMESTAMP - :stime::TIMESTAMP))) ON CONFLICT DO NOTHING";
