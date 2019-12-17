@@ -29,8 +29,8 @@ public class LaunchItemWriter implements ItemWriter<DBObject> {
 
 	private static final String INSERT_LAUNCH =
 			"INSERT INTO launch (uuid, project_id, user_id, name, description, start_time, end_time, number, last_modified,"
-					+ "mode, status, approximate_duration) VALUES (:uuid, :pr, :usr, :nm, :desc, :start, :end, :num, :last, "
-					+ ":md::LAUNCH_MODE_ENUM, :st::STATUS_ENUM, :approx) ON CONFLICT DO NOTHING RETURNING id;";
+					+ "mode, status, approximate_duration, has_retries) VALUES (:uuid, :pr, :usr, :nm, :desc, :start, :end, :num, :last, "
+					+ ":md::LAUNCH_MODE_ENUM, :st::STATUS_ENUM, :approx, :hrtr) ON CONFLICT DO NOTHING RETURNING id;";
 
 	private static final String INSERT_LAUNCH_ATTRIBUTES = "INSERT INTO item_attribute (value, launch_id) VALUES (:val, :id)";
 

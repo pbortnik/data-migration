@@ -6,6 +6,7 @@ import org.springframework.batch.item.database.ItemSqlParameterSourceProvider;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 
 import java.util.Date;
+import java.util.Optional;
 
 import static com.epam.reportportal.migration.steps.utils.MigrationUtils.toUtc;
 
@@ -28,6 +29,7 @@ class LaunchProviderUtils {
 		parameterSource.addValue("md", item.get("mode"));
 		parameterSource.addValue("st", item.get("status"));
 		parameterSource.addValue("approx", item.get("approximateDuration"));
+		parameterSource.addValue("hrtr", Optional.ofNullable(item.get("hasRetries")).orElse(false));
 		return parameterSource;
 	};
 
