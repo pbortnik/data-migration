@@ -19,7 +19,7 @@ services:
     #volumes:
     #  - ./data/storage:/data/storage
     environment:
-      JAVA_OPTS: "-Xms8g -Xmx12g -Djava.security.egd=file:/dev/./urandom"
+      JAVA_OPTS: "-Xmx8g -Djava.security.egd=file:/dev/./urandom"
       # Postgres params
       RP_DB_HOST: postgres
       # RP_DB_PORT: 5432
