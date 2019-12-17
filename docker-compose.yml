@@ -180,8 +180,8 @@ services:
 
   api:
     image: pbortnik/rp5-api:latest
-    volumes:
-      - ./data/storage:/data/storage
+    #volumes:
+    #  - ./data/storage:/data/storage
     depends_on:
       rabbitmq:
         condition: service_healthy

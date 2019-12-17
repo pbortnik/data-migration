@@ -63,7 +63,8 @@ public class FilterWriter implements ItemWriter<DBObject> {
 	}
 
 	private void storeIdsMapping(DBObject filter, Long entityId) {
-		mongoTemplate.upsert(Query.query(Criteria.where("_id").is(new ObjectId(filter.get("_id").toString()))),
+		mongoTemplate.upsert(
+				Query.query(Criteria.where("_id").is(new ObjectId(filter.get("_id").toString()))),
 				Update.update("postgresId", entityId),
 				"filterMapping"
 		);
@@ -82,9 +83,13 @@ public class FilterWriter implements ItemWriter<DBObject> {
 					params.addValue("fid", entityId);
 					params.addValue("cnd", condition.get("condition"));
 					params.addValue("vl", condition.get("value"));
-					params.addValue("sc",
-							FIELDS_MAPPING.getOrDefault(condition.get("searchCriteria"), (String) condition.get("searchCriteria"))
-					);
+					String searchCriteria = (String) condition.get("searchCriteria");
+
+					if (searchCriteria.equalsIgnoreCase("tags") && ((String) condition.get("condition")).equalsIgnoreCase("in")) {
+						params.addValue("cnd", "ANY");
+					}
+
+					params.addValue("sc", FIELDS_MAPPING.getOrDefault(searchCriteria, searchCriteria));
 					params.addValue("ng", condition.get("negative"));
 					return params;
 				})
