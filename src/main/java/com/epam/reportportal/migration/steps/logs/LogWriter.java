@@ -104,8 +104,12 @@ public class LogWriter implements ItemWriter<DBObject> {
 		String targetPath = Paths.get(commonPath, file.getFilename()).toString();
 		String path = dataStoreService.save(targetPath, new ByteArrayInputStream(bytes));
 		String pathThumbnail = createThumbnail(new ByteArrayInputStream(bytes), file.getContentType(), file.getFilename(), commonPath);
-		attachPaths.add(path);
-		attachPaths.add(pathThumbnail);
+		if (path != null) {
+			attachPaths.add(path);
+		}
+		if (pathThumbnail != null) {
+			attachPaths.add(pathThumbnail);
+		}
 		return jdbcTemplate.queryForObject(INSERT_ATTACH, attachSourceProvider(item, file, path, pathThumbnail), Long.class);
 	}
 
