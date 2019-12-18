@@ -23,10 +23,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.epam.reportportal.migration.datastore.binary.impl.DataStoreUtils.buildThumbnailFileName;
 import static com.epam.reportportal.migration.datastore.binary.impl.DataStoreUtils.isImage;
@@ -68,52 +67,46 @@ public class LogWriter implements ItemWriter<DBObject> {
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void write(List<? extends DBObject> items) {
 
-		Map<Boolean, ? extends List<? extends DBObject>> splitted = items.stream()
-				.collect(Collectors.partitioningBy(it -> it.get("file") == null));
-
-		SqlParameterSource[] values = splitted.get(true)
-				.stream()
-				.map(LOG_SOURCE_PROVIDER::createSqlParameterSource)
-				.toArray(SqlParameterSource[]::new);
+		List<String> attachPaths = new ArrayList<>();
 
 		try {
-			jdbcTemplate.batchUpdate(INSERT_LOG, values);
-
-			splitted.get(false).forEach(logWithBinary -> {
-				GridFSDBFile file = (GridFSDBFile) logWithBinary.get("file");
-
-				byte[] bytes;
-				try {
-					bytes = IOUtils.toByteArray(file.getInputStream());
-				} catch (IOException e) {
-					throw new RuntimeException(e);
+			SqlParameterSource[] values = items.stream().map(item -> {
+				MapSqlParameterSource sqlParameterSource = (MapSqlParameterSource) LOG_SOURCE_PROVIDER.createSqlParameterSource(item);
+				if (item.get("file") != null) {
+					Long attachmentId = processWithAttach(item, attachPaths);
+					sqlParameterSource.addValue("attachId", attachmentId);
+					return sqlParameterSource;
+				} else {
+					sqlParameterSource.addValue("attachId", null);
 				}
+				return sqlParameterSource;
+			}).toArray(SqlParameterSource[]::new);
 
-				String commonPath = Paths.get(String.valueOf(logWithBinary.get("projectId")), filePathGenerator.generate()).toString();
-				String targetPath = Paths.get(commonPath, file.getFilename()).toString();
+			jdbcTemplate.batchUpdate(INSERT_LOG_WITH_ATTACH, values);
 
-				String path = dataStoreService.save(targetPath, new ByteArrayInputStream(bytes));
-
-				String pathThumbnail = createThumbnail(new ByteArrayInputStream(bytes),
-						file.getContentType(),
-						file.getFilename(),
-						commonPath
-				);
-
-				Long attachmentId = jdbcTemplate.queryForObject(INSERT_ATTACH,
-						attachSourceProvider(logWithBinary, file, path, pathThumbnail),
-						Long.class
-				);
-				MapSqlParameterSource sqlParameterSource = (MapSqlParameterSource) LOG_SOURCE_PROVIDER.createSqlParameterSource(
-						logWithBinary);
-				sqlParameterSource.addValue("attachId", attachmentId);
-				jdbcTemplate.update(INSERT_LOG_WITH_ATTACH, sqlParameterSource);
-			});
 		} catch (DataIntegrityViolationException e) {
 			LOGGER.warn(e.getClass().toString());
+			attachPaths.forEach(attach -> dataStoreService.delete(attach));
 			items.forEach(it -> it.put("logMsg", it.get("logMsg").toString().replaceAll("\u0000", "")));
 			logWriter.write(items);
 		}
+	}
+
+	private Long processWithAttach(DBObject item, List<String> attachPaths) {
+		GridFSDBFile file = (GridFSDBFile) item.get("file");
+		byte[] bytes;
+		try {
+			bytes = IOUtils.toByteArray(file.getInputStream());
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		String commonPath = Paths.get(String.valueOf(item.get("projectId")), filePathGenerator.generate()).toString();
+		String targetPath = Paths.get(commonPath, file.getFilename()).toString();
+		String path = dataStoreService.save(targetPath, new ByteArrayInputStream(bytes));
+		String pathThumbnail = createThumbnail(new ByteArrayInputStream(bytes), file.getContentType(), file.getFilename(), commonPath);
+		attachPaths.add(path);
+		attachPaths.add(pathThumbnail);
+		return jdbcTemplate.queryForObject(INSERT_ATTACH, attachSourceProvider(item, file, path, pathThumbnail), Long.class);
 	}
 
 	private String createThumbnail(InputStream inputStream, String contentType, String fileName, String commonPath) {

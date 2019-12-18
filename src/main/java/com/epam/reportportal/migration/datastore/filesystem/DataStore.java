@@ -25,4 +25,6 @@ public interface DataStore {
 
 	String save(String fileName, InputStream inputStream);
 
+	void delete(String filePath);
+
 }
