@@ -86,7 +86,7 @@ public class CommonItemWriter {
 		return parameters.stream().map(it -> {
 			MapSqlParameterSource params = new MapSqlParameterSource();
 			params.addValue("key", Optional.ofNullable(((DBObject) it).get("key")).orElse(""));
-			params.addValue("val", Optional.ofNullable(((DBObject) it).get("val")).orElse(""));
+			params.addValue("val", Optional.ofNullable(((DBObject) it).get("value")).orElse(""));
 			params.addValue("id", itemId);
 			return params;
 		}).collect(Collectors.toList());
