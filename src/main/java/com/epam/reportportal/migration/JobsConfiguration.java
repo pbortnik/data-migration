@@ -33,9 +33,6 @@ public class JobsConfiguration {
 	private Step migrateProjectsStep;
 
 	@Autowired
-	private Step migrateTokensStep;
-
-	@Autowired
 	private Step migrateSettingsStep;
 
 	@Autowired
@@ -64,7 +61,6 @@ public class JobsConfiguration {
 		SimpleJobBuilder job = jobBuilderFactory.get("settingsMigrationJob")
 				.listener(migrationJobExecutionListener)
 				.start(migrateUserStep)
-				.next(migrateTokensStep)
 				.next(migrateProjectsStep)
 				.next(migrateSettingsStep)
 				.next(migrateAuthStep)
