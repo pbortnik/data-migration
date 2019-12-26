@@ -12,6 +12,7 @@ import org.springframework.batch.item.database.ItemSqlParameterSourceProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
@@ -26,6 +27,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.epam.reportportal.migration.datastore.binary.impl.DataStoreUtils.buildThumbnailFileName;
 import static com.epam.reportportal.migration.datastore.binary.impl.DataStoreUtils.isImage;
@@ -47,8 +49,8 @@ public class LogWriter implements ItemWriter<DBObject> {
 					+ "VALUES (:uid, :lt, :lmsg, :item, :lm, :ll, :attachId) ON CONFLICT DO NOTHING";
 
 	private static final String INSERT_ATTACH =
-			"INSERT INTO attachment (file_id, thumbnail_id, content_type, project_id, launch_id, item_id) "
-					+ "VALUES (:fid, :tid, :ct, :pr, :lnch, :item) ON CONFLICT DO NOTHING RETURNING id";
+			"INSERT INTO attachment (id, file_id, thumbnail_id, content_type, project_id, launch_id, item_id) "
+					+ "VALUES (:id, :fid, :tid, :ct, :pr, :lnch, :item) ON CONFLICT DO NOTHING";
 
 	@Autowired
 	@Qualifier("attachmentDataStoreService")
@@ -56,6 +58,9 @@ public class LogWriter implements ItemWriter<DBObject> {
 
 	@Autowired
 	private NamedParameterJdbcTemplate jdbcTemplate;
+
+	@Autowired
+	private JdbcTemplate jdbc;
 
 	@Autowired
 	private FilePathGenerator filePathGenerator;
@@ -67,14 +72,23 @@ public class LogWriter implements ItemWriter<DBObject> {
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void write(List<? extends DBObject> items) {
 
-		List<String> attachPaths = new ArrayList<>();
+		int attachCount = (int) items.stream().filter(item -> item.get("file") != null).count();
+
+		List<String> attachPaths = new ArrayList<>(attachCount);
+		List<SqlParameterSource> attachSources = new ArrayList<>(attachCount);
+
+		final AtomicInteger atomicCurrentAttachId = new AtomicInteger();
+		if (attachCount > 0) {
+			atomicCurrentAttachId.set(jdbc.queryForObject("SELECT multi_nextval('attachment_id_seq', ?)", Integer.class, attachCount));
+		}
 
 		try {
 			SqlParameterSource[] values = items.stream().map(item -> {
 				MapSqlParameterSource sqlParameterSource = (MapSqlParameterSource) LOG_SOURCE_PROVIDER.createSqlParameterSource(item);
 				if (item.get("file") != null) {
-					Long attachmentId = processWithAttach(item, attachPaths);
-					sqlParameterSource.addValue("attachId", attachmentId);
+					int attachId = atomicCurrentAttachId.getAndIncrement();
+					attachSources.add(processWithAttach(attachId, item, attachPaths));
+					sqlParameterSource.addValue("attachId", attachId);
 					return sqlParameterSource;
 				} else {
 					sqlParameterSource.addValue("attachId", null);
@@ -82,6 +96,7 @@ public class LogWriter implements ItemWriter<DBObject> {
 				return sqlParameterSource;
 			}).toArray(SqlParameterSource[]::new);
 
+			jdbcTemplate.batchUpdate(INSERT_ATTACH, attachSources.toArray(new SqlParameterSource[0]));
 			jdbcTemplate.batchUpdate(INSERT_LOG_WITH_ATTACH, values);
 
 		} catch (DataIntegrityViolationException e) {
@@ -92,7 +107,7 @@ public class LogWriter implements ItemWriter<DBObject> {
 		}
 	}
 
-	private Long processWithAttach(DBObject item, List<String> attachPaths) {
+	private MapSqlParameterSource processWithAttach(int attachId, DBObject item, List<String> attachPaths) {
 		GridFSDBFile file = (GridFSDBFile) item.get("file");
 		byte[] bytes;
 		try {
@@ -110,7 +125,7 @@ public class LogWriter implements ItemWriter<DBObject> {
 		if (pathThumbnail != null) {
 			attachPaths.add(pathThumbnail);
 		}
-		return jdbcTemplate.queryForObject(INSERT_ATTACH, attachSourceProvider(item, file, path, pathThumbnail), Long.class);
+		return attachSourceProvider(attachId, item, file, path, pathThumbnail);
 	}
 
 	private String createThumbnail(InputStream inputStream, String contentType, String fileName, String commonPath) {
@@ -137,8 +152,9 @@ public class LogWriter implements ItemWriter<DBObject> {
 		return parameterSource;
 	};
 
-	private MapSqlParameterSource attachSourceProvider(DBObject logFile, GridFSDBFile binary, String filePath, String thumbPath) {
+	private MapSqlParameterSource attachSourceProvider(int id, DBObject logFile, GridFSDBFile binary, String filePath, String thumbPath) {
 		MapSqlParameterSource parameterSource = new MapSqlParameterSource();
+		parameterSource.addValue("id", id);
 		parameterSource.addValue("fid", filePath);
 		parameterSource.addValue("tid", thumbPath);
 		parameterSource.addValue("ct", binary.getContentType());

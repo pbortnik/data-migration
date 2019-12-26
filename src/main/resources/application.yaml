@@ -9,7 +9,7 @@ rp:
     corePoolSize: 6
     maxPoolSize: 8
   mongodb:
-    uri: mongodb://localhost:27017
+    uri: mongodb://10.6.74.106:27017
     database: reportportal
 
   datasource:
@@ -37,7 +37,7 @@ rp:
       accessKey: minio
       secretKey: minio123
     # could be one of [seaweed, filesystem, minio]
-    type: filesystem
+    type: minio
 
   ##keep launches from date in ISO_LOCAL_DATE (yyyy-MM-dd)
   launch:

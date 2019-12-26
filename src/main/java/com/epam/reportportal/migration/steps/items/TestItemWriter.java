@@ -70,6 +70,9 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 
 	@Override
 	public void write(List<? extends DBObject> items) {
+		if (CollectionUtils.isEmpty(items)) {
+			return;
+		}
 		jdbc.execute("SET session_replication_role = REPLICA;");
 		List<SqlParameterSource> testItemSrc = new ArrayList<>(items.size());
 		List<SqlParameterSource> itemResultsSrc = new ArrayList<>(items.size());
@@ -119,6 +122,10 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 
 	private void updateSrcWithRetries(BasicDBList retries, DBObject mainItem, Long mainItemId, List<SqlParameterSource> retriesParams,
 			List<SqlParameterSource> results, List<SqlParameterSource> tags, List<SqlParameterSource> params) {
+
+		if (CollectionUtils.isEmpty(retries)) {
+			return;
+		}
 
 		final AtomicLong currentRetryId = new AtomicLong(jdbc.queryForObject("SELECT multi_nextval('test_item_item_id_seq', ?)",
 				Long.class,

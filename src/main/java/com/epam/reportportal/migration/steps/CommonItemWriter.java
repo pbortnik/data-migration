@@ -4,7 +4,6 @@ import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -20,9 +19,6 @@ import static com.epam.reportportal.migration.steps.StatisticsFieldsService.*;
  */
 @Component
 public class CommonItemWriter {
-
-	@Autowired
-	private NamedParameterJdbcTemplate jdbcTemplate;
 
 	@Autowired
 	private StatisticsFieldsService fieldsService;
@@ -86,7 +82,7 @@ public class CommonItemWriter {
 		return parameters.stream().map(it -> {
 			MapSqlParameterSource params = new MapSqlParameterSource();
 			params.addValue("key", Optional.ofNullable(((DBObject) it).get("key")).orElse(""));
-			params.addValue("val", Optional.ofNullable(((DBObject) it).get("value")).orElse(""));
+			params.addValue("val", Optional.ofNullable(((DBObject) it).get("value")).orElse("NULL"));
 			params.addValue("id", itemId);
 			return params;
 		}).collect(Collectors.toList());
