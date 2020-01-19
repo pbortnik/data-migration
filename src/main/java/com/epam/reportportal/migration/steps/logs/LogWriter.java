@@ -19,6 +19,7 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -71,6 +72,10 @@ public class LogWriter implements ItemWriter<DBObject> {
 	@Override
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void write(List<? extends DBObject> items) {
+
+		if (CollectionUtils.isEmpty(items)) {
+			return;
+		}
 
 		int attachCount = (int) items.stream().filter(item -> item.get("file") != null).count();
 
