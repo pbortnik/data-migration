@@ -110,14 +110,37 @@ public class TestItemWriter implements ItemWriter<DBObject> {
 				updateSrcWithRetries(retries, item, currentId, testRetriesSrc, itemResultsSrc, attributesSrc, paramsSrc);
 			}
 		});
-		jdbcTemplate.batchUpdate(INSERT_ITEM, testItemSrc.toArray(new SqlParameterSource[0]));
-		jdbcTemplate.batchUpdate(INSERT_RETRY_ITEM, testRetriesSrc.toArray(new SqlParameterSource[0]));
-		jdbcTemplate.batchUpdate(INSERT_ITEM_RESULTS, itemResultsSrc.toArray(new SqlParameterSource[0]));
-		jdbcTemplate.batchUpdate(INSERT_ISSUE, issuesSrc.toArray(new SqlParameterSource[0]));
-		jdbcTemplate.batchUpdate(INSERT_TICKET_ISSUE, issueTicketsSrc.toArray(new SqlParameterSource[0]));
-		jdbcTemplate.batchUpdate(INSERT_ITEM_STATISTICS, statisticsSrc.toArray(new SqlParameterSource[0]));
-		jdbcTemplate.batchUpdate(INSERT_ITEM_ATTRIBUTES, attributesSrc.toArray(new SqlParameterSource[0]));
-		jdbcTemplate.batchUpdate(INSERT_ITEM_PARAMETERS, paramsSrc.toArray(new SqlParameterSource[0]));
+
+		if (!CollectionUtils.isEmpty(testItemSrc)) {
+			jdbcTemplate.batchUpdate(INSERT_ITEM, testItemSrc.toArray(new SqlParameterSource[0]));
+		}
+
+		if (!CollectionUtils.isEmpty(testRetriesSrc)) {
+			jdbcTemplate.batchUpdate(INSERT_RETRY_ITEM, testRetriesSrc.toArray(new SqlParameterSource[0]));
+		}
+		if (!CollectionUtils.isEmpty(itemResultsSrc)) {
+			jdbcTemplate.batchUpdate(INSERT_ITEM_RESULTS, itemResultsSrc.toArray(new SqlParameterSource[0]));
+		}
+
+		if (!CollectionUtils.isEmpty(issuesSrc)) {
+			jdbcTemplate.batchUpdate(INSERT_ISSUE, issuesSrc.toArray(new SqlParameterSource[0]));
+		}
+
+		if (!CollectionUtils.isEmpty(issueTicketsSrc)) {
+			jdbcTemplate.batchUpdate(INSERT_TICKET_ISSUE, issueTicketsSrc.toArray(new SqlParameterSource[0]));
+		}
+
+		if (!CollectionUtils.isEmpty(statisticsSrc)) {
+			jdbcTemplate.batchUpdate(INSERT_ITEM_STATISTICS, statisticsSrc.toArray(new SqlParameterSource[0]));
+		}
+
+		if (!CollectionUtils.isEmpty(attributesSrc)) {
+			jdbcTemplate.batchUpdate(INSERT_ITEM_ATTRIBUTES, attributesSrc.toArray(new SqlParameterSource[0]));
+		}
+
+		if (!CollectionUtils.isEmpty(paramsSrc)) {
+			jdbcTemplate.batchUpdate(INSERT_ITEM_PARAMETERS, paramsSrc.toArray(new SqlParameterSource[0]));
+		}
 	}
 
 	private void updateSrcWithRetries(BasicDBList retries, DBObject mainItem, Long mainItemId, List<SqlParameterSource> retriesParams,

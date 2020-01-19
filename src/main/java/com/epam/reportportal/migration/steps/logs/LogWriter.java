@@ -45,8 +45,8 @@ public class LogWriter implements ItemWriter<DBObject> {
 			+ "VALUES (:uid, :lt, :lmsg, :item, :lm, :ll) ON CONFLICT DO NOTHING";
 
 	private static final String INSERT_LOG_WITH_ATTACH =
-			"INSERT INTO log (uuid, log_time, log_message, item_id, last_modified, log_level, attachment_id) "
-					+ "VALUES (:uid, :lt, :lmsg, :item, :lm, :ll, :attachId) ON CONFLICT DO NOTHING";
+			"INSERT INTO log (id, uuid, log_time, log_message, item_id, last_modified, log_level, attachment_id) "
+					+ "VALUES (:id, :uid, :lt, :lmsg, :item, :lm, :ll, :attachId) ON CONFLICT DO NOTHING";
 
 	private static final String INSERT_ATTACH =
 			"INSERT INTO attachment (id, file_id, thumbnail_id, content_type, project_id, launch_id, item_id) "
@@ -77,6 +77,9 @@ public class LogWriter implements ItemWriter<DBObject> {
 		List<String> attachPaths = new ArrayList<>(attachCount);
 		List<SqlParameterSource> attachSources = new ArrayList<>(attachCount);
 
+		final AtomicInteger atomicCurrentLogId = new AtomicInteger();
+		atomicCurrentLogId.set(jdbc.queryForObject("SELECT multi_nextval('log_id_seq', ?)", Integer.class, items.size()));
+
 		final AtomicInteger atomicCurrentAttachId = new AtomicInteger();
 		if (attachCount > 0) {
 			atomicCurrentAttachId.set(jdbc.queryForObject("SELECT multi_nextval('attachment_id_seq', ?)", Integer.class, attachCount));
@@ -84,10 +87,14 @@ public class LogWriter implements ItemWriter<DBObject> {
 
 		try {
 			SqlParameterSource[] values = items.stream().map(item -> {
+
 				MapSqlParameterSource sqlParameterSource = (MapSqlParameterSource) LOG_SOURCE_PROVIDER.createSqlParameterSource(item);
+				int logId = atomicCurrentLogId.getAndIncrement();
+				sqlParameterSource.addValue("id", logId);
+
 				if (item.get("file") != null) {
 					int attachId = atomicCurrentAttachId.getAndIncrement();
-					attachSources.add(processWithAttach(attachId, item, attachPaths));
+					attachSources.add(processWithAttach(attachId, item, attachPaths, logId));
 					sqlParameterSource.addValue("attachId", attachId);
 					return sqlParameterSource;
 				} else {
@@ -107,7 +114,7 @@ public class LogWriter implements ItemWriter<DBObject> {
 		}
 	}
 
-	private MapSqlParameterSource processWithAttach(int attachId, DBObject item, List<String> attachPaths) {
+	private MapSqlParameterSource processWithAttach(int attachId, DBObject item, List<String> attachPaths, int logId) {
 		GridFSDBFile file = (GridFSDBFile) item.get("file");
 		byte[] bytes;
 		try {
@@ -115,10 +122,17 @@ public class LogWriter implements ItemWriter<DBObject> {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		String commonPath = Paths.get(String.valueOf(item.get("projectId")), filePathGenerator.generate()).toString();
-		String targetPath = Paths.get(commonPath, file.getFilename()).toString();
+
+		String fileName = logId + "-" + file.getFilename();
+
+		String commonPath = filePathGenerator.generate(
+				toUtc((Date) item.get("logTime")).toLocalDateTime(),
+				String.valueOf(item.get("projectId")),
+				String.valueOf(item.get("launchId"))
+		);
+		String targetPath = Paths.get(commonPath, fileName).toString();
 		String path = dataStoreService.save(targetPath, new ByteArrayInputStream(bytes));
-		String pathThumbnail = createThumbnail(new ByteArrayInputStream(bytes), file.getContentType(), file.getFilename(), commonPath);
+		String pathThumbnail = createThumbnail(new ByteArrayInputStream(bytes), file.getContentType(), fileName, commonPath);
 		if (path != null) {
 			attachPaths.add(path);
 		}

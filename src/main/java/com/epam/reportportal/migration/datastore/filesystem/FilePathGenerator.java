@@ -16,13 +16,10 @@
 
 package com.epam.reportportal.migration.datastore.filesystem;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * @author Dzianis_Shybeka
@@ -30,32 +27,13 @@ import java.util.UUID;
 @Component
 public class FilePathGenerator {
 
-	private static final Logger LOG = LoggerFactory.getLogger(FilePathGenerator.class);
-
-	public FilePathGenerator() {
-
-	}
-
 	/**
 	 * Generate relative file path for new local file. ${Day of the year}/${split UUID part}
 	 *
 	 * @return
 	 */
-	public String generate() {
-
-		String uuid = UUID.randomUUID().toString();
-
-		int dayOfYear = LocalDateTime.now().getDayOfYear();
-
-		String levelOne = uuid.substring(0, 2);
-		String levelTwo = uuid.substring(2, 4);
-		String levelThree = uuid.substring(4, 6);
-		String tail = uuid.substring(6);
-
-		String result = Paths.get(String.valueOf(dayOfYear), levelOne, levelTwo, levelThree, tail).toString();
-
-		LOG.debug("File path generated: {}", result);
-
-		return result;
+	public String generate(LocalDateTime localDateTime, String projectId, String launchUuid) {
+		String date = localDateTime.getYear() + "-" + localDateTime.getMonthValue();
+		return Paths.get(String.valueOf(projectId), date, launchUuid).toString();
 	}
 }

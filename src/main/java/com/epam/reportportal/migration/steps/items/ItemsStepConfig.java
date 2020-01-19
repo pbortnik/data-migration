@@ -185,7 +185,7 @@ public class ItemsStepConfig {
 
 	private void prepareOptimizedTestItemCollection() {
 		if (mongoTemplate.collectionExists(OPTIMIZED_TEST_COLLECTION)) {
-			mongoTemplate.dropCollection(OPTIMIZED_TEST_COLLECTION);
+			return;
 		}
 
 		mongoTemplate.createCollection(OPTIMIZED_TEST_COLLECTION);

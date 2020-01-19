@@ -9,7 +9,7 @@ rp:
     corePoolSize: 6
     maxPoolSize: 8
   mongodb:
-    uri: mongodb://10.6.74.106:27017
+    uri: mongodb://192.168.100.2:27017
     database: reportportal
 
   datasource:
@@ -18,7 +18,7 @@ rp:
     jdbcUrl: ${rp.db.url}
     username: ${rp.db.user}
     password: ${rp.db.pass}
-    maximumPoolSize: 18
+    maximumPoolSize: 14
 
   db:
     url: jdbc:postgresql://${rp.db.host}:${rp.db.port}/${rp.db.name}
@@ -26,7 +26,7 @@ rp:
     host: localhost
     port: 5432
     user: rpuser
-    pass: rppass
+    pass: ivanbudaev4ushka
 
   binarystore:
     path: /Users/pavel_bortnik/ReportPortal5/data/storage
