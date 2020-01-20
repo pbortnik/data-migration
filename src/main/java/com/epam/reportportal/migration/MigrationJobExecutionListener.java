@@ -31,6 +31,9 @@ public class MigrationJobExecutionListener implements JobExecutionListener {
 
 	@Override
 	public void beforeJob(JobExecution jobExecution) {
+		ClassPathResource resource = new ClassPathResource("clean_up_data.sql");
+		ResourceDatabasePopulator databasePopulator = new ResourceDatabasePopulator(resource);
+		databasePopulator.execute(dataSource);
 	}
 
 	@Override

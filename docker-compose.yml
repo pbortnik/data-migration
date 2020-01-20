@@ -62,7 +62,7 @@ services:
     restart: always
 
   migrations:
-    image: pbortnik/rp5-free-data-migrations:latest
+    image: reportportal/migrations:5.0.0-RC-6
     restart: on-failure
     depends_on:
       postgres:
@@ -76,7 +76,7 @@ services:
 
   postgres:
     image: postgres:12-alpine
-    shm_size: '512m'
+#    shm_size: '512m'
     environment:
       POSTGRES_USER: rpuser
       POSTGRES_PASSWORD: rppass
