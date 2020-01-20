@@ -1,17 +1,48 @@
-## This is example of Docker Compose for ReportPortal version 5 with data migration from MongoDB
-## to PostgreSQL.
+## This is example of Docker Compose for ReportPortal
 ## Do not forget to configure data volumes for production usage
 
-## Execute 'docker-compose -f docker-compose-v5-migration.yml -p reportportal up -d --force-recreate' --build
+## Execute 'docker-compose -f docker-compose.yml -p reportportal up -d --force-recreate' --build
 ## to start all containers in daemon mode
 ## Where:
-##      '-f docker-compose-local.yml' -- specifies this compose file
+##      '-f docker-compose.yml' -- specifies this compose file
 ##      '-p reportportal' -- specifies container's prefix (project name)
 ##      '-d' -- enables daemon mode
 ##      '--force-recreate' -- forces re-recreating of all containers
-##      '--build' -- build images before starting containers.
+
 version: '2.4'
 services:
+
+  server-migration:
+    image: pbortnik/server-migration:latest
+    ## for storing binary data at filesystem
+    ## - RP_BINARYSTORE_CONTAINER_PATH:/data/storage
+    #    volumes:
+    #      - ./data/storage:/data/storage
+    depends_on:
+      migrations:
+        condition: service_started
+      minio:
+        condition: service_healthy
+    environment:
+      # Postgres params
+      RP_DB_HOST: postgres
+      RP_DB_USER: rpuser
+      RP_DB_PASS: rppass
+      RP_DB_NAME: reportportal
+      RP_DB_PORT: 5432
+
+      RP_BINARYSTORE_TYPE: minio
+      #      RP_BINARYSTORE_TYPE: filesystem
+      #      RP_BINARYSTORE_CONTAINER_PATH : /data/storage ## where to store at filesystem
+      RP_BINARYSTORE_MINIO_ENDPOINT: http://minio:9000
+      RP_BINARYSTORE_MINIO_ACCESSKEY: minio
+      RP_BINARYSTORE_MINIO_SECRETKEY: minio123
+
+      ## Leep users from last login date in ISO_LOCAL_DATE (yyyy-MM-dd)
+      RP_USER_KEEPFROM: '2000-01-01'
+      # Mongodb params
+      RP_MONGODB_DATABASE: reportportal
+      RP_MONGODB_URI: mongodb://user:password@host:port
 
   gateway:
     image: traefik:1.7.12
@@ -49,47 +80,49 @@ services:
       nofile:
         soft: 65536
         hard: 65536
-    ports:
-      - "9200:9200"
+      # ports:
+      # - "9200:9200"
     healthcheck:
       test: ["CMD", "curl","-s" ,"-f", "http://localhost:9200/_cat/health"]
 
   analyzer:
-    image: reportportal/service-analyzer:5.0.0-RC-5
+    image: reportportal/service-analyzer:5.0.0
     depends_on:
       - rabbitmq
       - elasticsearch
     restart: always
 
-  migrations:
-    image: reportportal/migrations:5.0.0-RC-6
+  ### initial db schema for reportportal
+  db-scripts:
+    image: reportportal/migrations:5.0.0
     restart: on-failure
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      POSTGRES_USER: rpuser
-      POSTGRES_PORT: 5432
-      POSTGRES_PASSWORD: rppass
       POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
       POSTGRES_DB: reportportal
+      POSTGRES_USER: rpuser
+      POSTGRES_PASSWORD: rppass
+
 
   postgres:
     image: postgres:12-alpine
-#    shm_size: '512m'
+    shm_size: '512m'
     environment:
       POSTGRES_USER: rpuser
       POSTGRES_PASSWORD: rppass
       POSTGRES_DB: reportportal
     volumes:
-      # For windows host
-      # - postgres:/var/lib/postgresql/data
       # For unix host
       - ./data/postgres:/var/lib/postgresql/data
+      # For windows host
+      # - postgres:/var/lib/postgresql/data
     restart: on-failure
     # If you need to access the DB locally. Could be a security risk to expose DB.
-    ports:
-      - "5432:5432"
+    #    ports:
+    #      - "5432:5432"
     command:
       -c checkpoint_completion_target=0.9
       -c work_mem=96MB
@@ -99,47 +132,13 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER"]
       interval: 10s
-      timeout: 320s
-      retries: 25
-
-
-  server-migration:
-    image: pbortnik/server-migration:latest
-    ## for storing binary data at filesystem
-    ## - RP_BINARYSTORE_CONTAINER_PATH:/data/storage
-    #    volumes:
-    #      - ./data/storage:/data/storage
-    depends_on:
-      migrations:
-        condition: service_started
-      minio:
-        condition: service_healthy
-    environment:
-      # Postgres params
-      RP_DB_HOST: postgres
-      RP_DB_USER: rpuser
-      RP_DB_PASS: rppass
-      RP_DB_NAME: reportportal
-      RP_DB_PORT: 5432
-
-      RP_BINARYSTORE_TYPE: minio
-      #      RP_BINARYSTORE_TYPE: filesystem
-      #      RP_BINARYSTORE_CONTAINER_PATH : /data/storage ## where to store at filesystem
-      RP_BINARYSTORE_MINIO_ENDPOINT: http://minio:9000
-      RP_BINARYSTORE_MINIO_ACCESSKEY: minio
-      RP_BINARYSTORE_MINIO_SECRETKEY: minio123
-
-      ## Leep users from last login date in ISO_LOCAL_DATE (yyyy-MM-dd)
-      RP_USER_KEEPFROM: '2000-01-01'
-      # Mongodb params
-      RP_MONGODB_DATABASE: reportportal
-      RP_MONGODB_URI: mongodb://user:password@host:port
-
+      timeout: 120s
+      retries: 10
 
   rabbitmq:
     image: rabbitmq:3.7.16-management
     ports:
-    #  - "5672:5672"
+      # - "5672:5672"
       - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: "rabbitmq"
@@ -149,7 +148,7 @@ services:
       retries: 5
 
   uat:
-    image: reportportal/service-authorization:5.0.0-RC-5
+    image: reportportal/service-authorization:5.0.0
     #ports:
     #  - "9999:9999"
     environment:
@@ -172,7 +171,8 @@ services:
   index:
     image: reportportal/service-index:5.0.5
     depends_on:
-      - gateway
+      gateway:
+        condition: service_started
     restart: always
     environment:
       - LB_URL=http://gateway:8081
@@ -184,9 +184,7 @@ services:
       - "traefik.tags=reportportal"
 
   api:
-    image: reportportal/service-api:5.0.0-RC-5
-    #volumes:
-    #  - ./data/storage:/data/storage
+    image: reportportal/service-api:5.0.0
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -194,8 +192,6 @@ services:
         condition: service_started
       postgres:
         condition: service_healthy
-    # uncomment to use seaweedfs for file storing
-    # - seaweed-volume
     environment:
       - RP_DB_USER=rpuser
       - RP_DB_PASS=rppass
@@ -215,7 +211,7 @@ services:
       - "traefik.tags=reportportal"
 
   ui:
-    image: reportportal/service-ui:5.0.0-RC-5
+    image: reportportal/service-ui:5.0.0
     environment:
       - RP_SERVER_PORT=8080
     restart: always
@@ -243,5 +239,5 @@ services:
       retries: 3
 
   # Docker volume for Windows host
-#volumes:
-#  postgres:
+  #volumes:
+  #  postgres:
