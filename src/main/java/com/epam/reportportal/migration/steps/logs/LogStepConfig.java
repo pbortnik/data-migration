@@ -39,9 +39,8 @@ public class LogStepConfig {
 
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
-	private static final int CHUNK_SIZE = 30_000;
-
-	private static final int LIMIT_SIZE = 10_000;
+	@Value("${rp.items.batch}")
+	private int batchSize;
 
 	@Value("${rp.log.keepFrom}")
 	private String keepFrom;
@@ -85,7 +84,7 @@ public class LogStepConfig {
 
 	@Bean
 	public Step slaveLogStep() {
-		return stepBuilderFactory.get("slaveLogStep").<DBObject, DBObject>chunk(CHUNK_SIZE).reader(logItemReader(null, null))
+		return stepBuilderFactory.get("slaveLogStep").<DBObject, DBObject>chunk(batchSize).reader(logItemReader(null, null))
 				.processor(logProcessor)
 				.writer(logWriter)
 				.build();
@@ -111,7 +110,7 @@ public class LogStepConfig {
 		itemReader.setSort(new HashMap<String, Sort.Direction>() {{
 			put("logTime", Sort.Direction.ASC);
 		}});
-		itemReader.setLimit(LIMIT_SIZE);
+		itemReader.setLimit(batchSize);
 		itemReader.setDateField("logTime");
 		itemReader.setCurrentDate(new Date(minTime));
 		itemReader.setLatestDate(new Date(maxTime));

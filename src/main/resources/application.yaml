@@ -5,6 +5,8 @@ spring:
       uri: ${rp.mongodb.uri}
 
 rp:
+  items:
+    batch: 5000
   pool:
     corePoolSize: 6
     maxPoolSize: 8

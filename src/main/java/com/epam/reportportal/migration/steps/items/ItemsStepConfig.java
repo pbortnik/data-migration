@@ -43,14 +43,13 @@ public class ItemsStepConfig {
 
 	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 
-	private static final int CHUNK_SIZE = 10_000;
-
-	private static final int LIMIT_SIZE = 10_000;
-
 	public static String OPTIMIZED_TEST_COLLECTION = "optimizeTest";
 
 	@Value("${rp.pool.corePoolSize}")
 	private int corePoolSize;
+
+	@Value("${rp.items.batch}")
+	private int batchSize;
 
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
@@ -124,7 +123,7 @@ public class ItemsStepConfig {
 	@Bean
 	@Scope(BeanDefinition.SCOPE_PROTOTYPE)
 	public Step slaveItemStep(int i) {
-		return stepBuilderFactory.get("slaveItemStep." + i).<DBObject, DBObject>chunk(CHUNK_SIZE).reader(testItemReader(null, null, null))
+		return stepBuilderFactory.get("slaveItemStep." + i).<DBObject, DBObject>chunk(batchSize).reader(testItemReader(null, null, null))
 				.processor(testItemProcessor)
 				.writer(testItemWriter)
 				.listener(chunkCountListener)
@@ -142,7 +141,7 @@ public class ItemsStepConfig {
 		itemReader.setSort(new HashMap<String, Sort.Direction>() {{
 			put("start_time", Sort.Direction.ASC);
 		}});
-		itemReader.setLimit(LIMIT_SIZE);
+		itemReader.setLimit(batchSize);
 		itemReader.setDateField("start_time");
 		itemReader.setCurrentDate(new Date(minTime));
 		itemReader.setLatestDate(new Date(maxTime));
