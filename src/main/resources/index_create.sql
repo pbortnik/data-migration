@@ -14,6 +14,9 @@ CREATE INDEX IF NOT EXISTS test_item_unique_id_launch_id_idx ON test_item (uniqu
 CREATE INDEX IF NOT EXISTS item_test_case_id_launch_id_idx ON test_item (test_case_id, launch_id);
 CREATE INDEX IF NOT EXISTS path_gist_idx ON test_item USING gist (path);
 CREATE INDEX IF NOT EXISTS path_idx ON test_item USING btree (path);
+CREATE INDEX IF NOT EXISTS test_case_hash_idx ON test_item (test_case_hash);
+CREATE INDEX IF NOT EXISTS test_case_hash_launch_id_idx ON test_item (test_case_hash, launch_id);
+
 ALTER TABLE test_item
     ADD CONSTRAINT test_item_retry_of_fkey FOREIGN KEY (retry_of) REFERENCES test_item (item_id) ON DELETE CASCADE;
 

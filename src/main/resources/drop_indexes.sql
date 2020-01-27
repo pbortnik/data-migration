@@ -14,6 +14,8 @@ DROP INDEX IF EXISTS test_item_unique_id_launch_id_idx;
 DROP INDEX IF EXISTS item_test_case_id_launch_id_idx;
 DROP INDEX IF EXISTS path_gist_idx;
 DROP INDEX IF EXISTS path_idx;
+DROP INDEX IF EXISTS test_case_hash_idx;
+DROP INDEX IF EXISTS test_case_hash_launch_id_idx;
 
 ALTER TABLE test_item
     DROP CONSTRAINT IF EXISTS test_item_retry_of_fkey;
