@@ -7,6 +7,8 @@ spring:
 rp:
   items:
     batch: 5000
+  grid:
+    size: 16
   pool:
     corePoolSize: 6
     maxPoolSize: 8

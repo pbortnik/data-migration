@@ -51,6 +51,9 @@ public class ItemsStepConfig {
 	@Value("${rp.items.batch}")
 	private int batchSize;
 
+	@Value("${rp.grid.size}")
+	private int gridSize;
+
 	@Autowired
 	private StepBuilderFactory stepBuilderFactory;
 

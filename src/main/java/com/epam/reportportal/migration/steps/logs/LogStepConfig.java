@@ -42,6 +42,9 @@ public class LogStepConfig {
 	@Value("${rp.items.batch}")
 	private int batchSize;
 
+	@Value("${rp.grid.size}")
+	private int gridSize;
+
 	@Value("${rp.log.keepFrom}")
 	private String keepFrom;
 
@@ -75,7 +78,7 @@ public class LogStepConfig {
 		prepareCollectionForReading();
 		return stepBuilderFactory.get("log")
 				.partitioner("slaveLogStep", logPartitioner(findStartObject(fromDate), findLastObject(fromDate)))
-				.gridSize(corePoolSize)
+				.gridSize(gridSize)
 				.step(slaveLogStep())
 				.taskExecutor(threadPoolTaskExecutor)
 				.listener(chunkCountListener)
