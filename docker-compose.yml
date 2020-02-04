@@ -19,7 +19,7 @@ services:
     #    volumes:
     #      - ./data/storage:/data/storage
     depends_on:
-      migrations:
+      db-scripts:
         condition: service_started
       minio:
         condition: service_healthy
