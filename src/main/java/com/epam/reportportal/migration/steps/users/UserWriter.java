@@ -73,18 +73,21 @@ public class UserWriter implements ItemWriter<DBObject> {
 	}
 
 	private void saveUserAndPhoto(DBObject user) {
+		String attach = null;
+		String attachThumb = null;
 		GridFSDBFile file = gridFsOperations.findOne(Query.query(Criteria.where("_id").is(user.get("photoId"))));
-		byte[] bytes;
-		try {
-			bytes = IOUtils.toByteArray(file.getInputStream());
-		} catch (IOException e) {
-			throw new RuntimeException(e);
+		if (file != null) {
+			byte[] bytes;
+			try {
+				bytes = IOUtils.toByteArray(file.getInputStream());
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			attach = dataStoreService.save(Paths.get(ROOT_USER_PHOTO_DIR, user.get("_id").toString()).toString(), new ByteArrayInputStream(bytes));
+			attachThumb = dataStoreService.saveThumbnail(DataStoreUtils.buildThumbnailFileName(ROOT_USER_PHOTO_DIR,
+					user.get("_id").toString()
+			), new ByteArrayInputStream(bytes));
 		}
-
-		String attach = dataStoreService.save(Paths.get(ROOT_USER_PHOTO_DIR, user.get("_id").toString()).toString(), new ByteArrayInputStream(bytes));
-		String attachThumb = dataStoreService.saveThumbnail(DataStoreUtils.buildThumbnailFileName(ROOT_USER_PHOTO_DIR,
-				user.get("_id").toString()
-		), new ByteArrayInputStream(bytes));
 
 		String metadata = getMetadata(file.getContentType(), (BasicDBObject) user.get("metaInfo"));
 		MapSqlParameterSource ps = getCommonSqlParameterSource(user, metadata);
