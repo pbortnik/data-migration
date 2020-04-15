@@ -76,6 +76,7 @@ public class UserWriter implements ItemWriter<DBObject> {
 		String attach = null;
 		String attachThumb = null;
 		GridFSDBFile file = gridFsOperations.findOne(Query.query(Criteria.where("_id").is(user.get("photoId"))));
+		String contentType = null;
 		if (file != null) {
 			byte[] bytes;
 			try {
@@ -87,9 +88,11 @@ public class UserWriter implements ItemWriter<DBObject> {
 			attachThumb = dataStoreService.saveThumbnail(DataStoreUtils.buildThumbnailFileName(ROOT_USER_PHOTO_DIR,
 					user.get("_id").toString()
 			), new ByteArrayInputStream(bytes));
+			contentType = file.getContentType();
 		}
 
-		String metadata = getMetadata(file.getContentType(), (BasicDBObject) user.get("metaInfo"));
+
+		String metadata = getMetadata(contentType, (BasicDBObject) user.get("metaInfo"));
 		MapSqlParameterSource ps = getCommonSqlParameterSource(user, metadata);
 		ps.addValue("attach", attach);
 		ps.addValue("attach_thumb", attachThumb);
