@@ -43,7 +43,7 @@ ALTER TABLE issue
     DROP CONSTRAINT IF EXISTS issue_issue_id_fkey;
 DROP INDEX IF EXISTS issue_it_idx;
 DROP INDEX IF EXISTS ticket_submitter_idx;
-ALTER TABLE reportportal.public.issue_ticket
+ALTER TABLE issue_ticket
     DROP CONSTRAINT IF EXISTS issue_ticket_issue_id_fkey,
     DROP CONSTRAINT IF EXISTS issue_ticket_ticket_id_fkey;
 
