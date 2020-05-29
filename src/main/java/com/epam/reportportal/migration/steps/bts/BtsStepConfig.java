@@ -127,7 +127,7 @@ public class BtsStepConfig {
 		} catch (EmptyResultDataAccessException e) {
 			LOGGER.debug(String.format("Integration type with name '%s' not found.", integrationName));
 			Long id = jdbcTemplate.queryForObject(
-					"INSERT INTO integration_type (name, auth_flow, group_type, enabled, details) VALUES (:nm, 'BASIC', 'BTS', FALSE, NULL) RETURNING id",
+					"INSERT INTO integration_type (name, auth_flow, group_type, enabled, details) VALUES (:nm, 'BASIC', 'BTS', FALSE, '{}') RETURNING id",
 					Collections.singletonMap("nm", integrationName),
 					Long.class
 			);
