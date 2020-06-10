@@ -99,6 +99,7 @@ public class ProjectStepConfig {
 		attributes.put("keepLogs", 3L);
 		attributes.put("keepScreenshots", 4L);
 
+		attributes.put("isAutoPatternAnalyzerEnabled", 10L);
 		attributes.put("isAutoAnalyzerEnabled", 11L);
 		attributes.put("analyzerMode", 12L);
 
