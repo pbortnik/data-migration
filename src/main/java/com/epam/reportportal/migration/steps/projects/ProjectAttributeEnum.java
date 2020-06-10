@@ -15,6 +15,7 @@ public enum ProjectAttributeEnum {
 	KEEP_SCREENSHOTS("keepScreenshots", "2 weeks"),
 	INDEXING_RUNNING("indexingRunning", String.valueOf(false)),
 	AUTO_ANALYZER_ENABLED("isAutoAnalyzerEnabled", String.valueOf(false)),
+	PATTERN_ANALYZER_ENABLED("isAutoPatternAnalyzerEnabled", String.valueOf(false)),
 	AUTO_ANALYZER_MODE("analyzerMode", "LAUNCH_NAME");
 
 	private String attribute;
