@@ -48,7 +48,7 @@ public class WidgetStepConfig {
 			.put("launches_comparison_chart", "launchesComparisonChart")
 			.put("launches_duration_chart", "launchesDurationChart")
 			.put("most_failed_test_cases", "topTestCases")
-			.put("flaky_test_cases", "topTestCases")
+			.put("flaky_test_cases", "flakyTestCases")
 			.put("passing_rate_summary", "passingRateSummary")
 			.put("passing_rate_per_launch", "passingRatePerLaunch")
 			.put("product_status", "productStatus")
@@ -254,7 +254,7 @@ public class WidgetStepConfig {
 
 	private DBObject processOverall(DBObject widgetOptions) {
 		BasicDBList viewMode = (BasicDBList) widgetOptions.get("viewMode");
-		if (!CollectionUtils.isEmpty(viewMode)) {
+		if (viewMode != null && viewMode.get(0) != null) {
 			widgetOptions.put("viewMode", viewMode.get(0));
 		} else {
 			widgetOptions.put("viewMode", "panel");
@@ -265,10 +265,8 @@ public class WidgetStepConfig {
 	private DBObject processLatest(DBObject widgetOptions) {
 		if (widgetOptions != null) {
 			Object latest = widgetOptions.get("latest");
-			if (latest != null) {
-				widgetOptions.put("latest", true);
-				return widgetOptions;
-			}
+			widgetOptions.put("latest", latest != null);
+			return widgetOptions;
 		}
 		return new BasicDBObject("latest", false);
 	}

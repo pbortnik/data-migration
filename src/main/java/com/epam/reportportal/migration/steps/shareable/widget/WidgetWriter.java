@@ -67,7 +67,7 @@ public class WidgetWriter implements ItemWriter<DBObject> {
 		items.forEach(widget -> {
 			Long widgetId = write(widget);
 			contentFields.addAll(contentFieldsSqlSources(widgetId,
-					(BasicDBList) ((DBObject) widget.get("contentOptions")).get("contentFields")
+ 					(BasicDBList) ((DBObject) widget.get("contentOptions")).get("contentFields")
 			));
 			if (null != filterMapping.get(widget.get("applyingFilterId"))) {
 				widgetFilter.add(new Object[] { widgetId, filterMapping.get(widget.get("applyingFilterId")) });
